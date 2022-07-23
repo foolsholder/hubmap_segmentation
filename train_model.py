@@ -15,7 +15,7 @@ model_holder = ModelHolder(config)
 
 trainer = pl.Trainer(
     min_epochs=100,
-    accelerator='gpu',
+    accelerator='ddp',
     gpus=2,
     num_nodes=1,
     log_every_n_steps=1,
