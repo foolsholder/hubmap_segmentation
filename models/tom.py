@@ -2,6 +2,7 @@ import torch
 from torch import nn, optim
 import torch.nn.functional as F
 import sys
+from typing import Dict
 
 import pretrainedmodels
 
@@ -162,7 +163,7 @@ class UNET_SERESNEXT101(nn.Module):
             conv1x1(64,1).apply(init_weight)
         )
 
-    def forward(self, inputs):
+    def forward(self, inputs) -> Dict[str, torch.Tensor]:
         #encoder
         x0 = self.encoder0(inputs) #->(*,64,h/2,w/2)
         x1 = self.encoder1(x0) #->(*,256,h/4,w/4)
@@ -190,7 +191,9 @@ class UNET_SERESNEXT101(nn.Module):
         #final conv
         logits = self.final_conv(hypercol) #->(*,1,h,w)
 
-        return logits
+        return {
+            "logits": logits
+        }
 
 
 def build_model(model_name, resolution, load_weights):
