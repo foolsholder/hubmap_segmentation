@@ -14,7 +14,7 @@ class Dice(Metric):
 
     def update(self, probs: torch.Tensor, target: torch.Tensor):
         batch_size = probs.shape[0]
-        probs = (probs >= 0.).view(batch_size, -1).float()
+        probs = (probs >= self.thr).view(batch_size, -1).float()
         target = (target > 0.).view(batch_size, -1).float()
         mult = target * probs
         mult = torch.sum(mult, dim=1)
