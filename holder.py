@@ -78,6 +78,7 @@ class ModelHolder(pl.LightningModule):
             outputs: Union[Dict[str, torch.Tensor], List[Dict[str, torch.Tensor]]]
     ) -> None:
         self.log('valid_dice', self.dice.compute(), prog_bar=True)
+        self.dice.reset()
 
     def forward(self, input_x: torch.Tensor) -> Dict[str, Any]:
         logits = self.segmentor(input_x)
