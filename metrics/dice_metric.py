@@ -10,7 +10,7 @@ class Dice(Metric):
         self.thr = thr
         self.smooth = smooth
         self.add_state("sum_dice", default=torch.tensor(0.), dist_reduce_fx="sum")
-        self.add_state("total_samples", default=torch.tensor(0.))
+        self.add_state("total_samples", default=torch.tensor(0.), dist_reduce_fx="sum")
 
     def update(self, probs: torch.Tensor, target: torch.Tensor):
         batch_size = probs.shape[0]
