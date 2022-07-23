@@ -10,7 +10,7 @@ from typing import (
     Dict, Optional, List, Tuple,
     Callable, Union, Any, Sequence
 )
-from callbacks.dice_metric import Dice
+from metrics.dice_metric import Dice
 
 from models.utils import create_model
 
