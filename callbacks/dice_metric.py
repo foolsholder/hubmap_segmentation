@@ -23,7 +23,7 @@ class Dice(Metric):
         print(mult, denom)
         self.batched_dice += torch.mean((2 * mult + self.smooth) / (denom + self.smooth))
         self.total_batches += 1
-        print(self.batched_dice, self.total_batches)
+        print("DICE info:", self.batched_dice, self.total_batches)
 
     def compute(self) -> torch.Tensor:
         return self.batched_dice.float() / self.total_batches
