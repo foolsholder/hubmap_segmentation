@@ -24,6 +24,6 @@ trainer = pl.Trainer(
 
 trainer.fit(
     model=model_holder,
-    train_dataloaders=create_loader(train=True),
+    train_dataloaders=create_loader(train=False),
     val_dataloaders=create_loader(train=False),
 )
