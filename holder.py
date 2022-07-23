@@ -71,7 +71,7 @@ class ModelHolder(pl.LightningModule):
         target = batch_dict['target']
         #torch.save(probs.cpu(), 'probs.pth')
         #torch.save(target.cpu(), 'target.pth')
-        self.dice.update(logits, target)
+        self.dice.update(probs, target)
 
     def validation_epoch_end(
             self,

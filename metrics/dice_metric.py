@@ -12,9 +12,9 @@ class Dice(Metric):
         self.add_state("sum_dice", default=torch.tensor(0.), dist_reduce_fx="sum")
         self.add_state("total_samples", default=torch.tensor(0.))
 
-    def update(self, logits: torch.Tensor, target: torch.Tensor):
-        batch_size = logits.shape[0]
-        probs = (logits >= 0.).view(batch_size, -1).float()
+    def update(self, probs: torch.Tensor, target: torch.Tensor):
+        batch_size = probs.shape[0]
+        probs = (probs >= 0.).view(batch_size, -1).float()
         target = (target > 0.).view(batch_size, -1).float()
         mult = target * probs
         mult = torch.sum(mult, dim=1)
