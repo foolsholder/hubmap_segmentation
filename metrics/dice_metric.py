@@ -15,7 +15,7 @@ class Dice(Metric):
     def update(self, logits: torch.Tensor, target: torch.Tensor):
         batch_size = logits.shape[0]
         probs = (logits >= 0.).view(batch_size, -1).float()
-        target = (target >= 0.).view(batch_size, -1).float()
+        target = (target > 0.).view(batch_size, -1).float()
         mult = target * probs
         mult = torch.sum(mult, dim=1)
         denom = torch.sum(probs, dim=1) + torch.sum(target, dim=1)
