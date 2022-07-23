@@ -13,7 +13,6 @@ class Dice(Metric):
         self.add_state("total_samples", default=torch.Tensor(0.))
 
     def update(self, logits: torch.Tensor, target: torch.Tensor):
-        print(logits.shape, target.shape)
         batch_size = logits.shape[0]
         probs = (logits >= 0.).view(batch_size, -1).float()
         target = (target >= 0.).view(batch_size, -1).float()
