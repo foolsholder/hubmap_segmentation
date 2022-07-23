@@ -13,12 +13,14 @@ class Dice(Metric):
         self.add_state("total_batches", default=torch.Tensor(0), dist_reduce_fx="sum")
 
     def update(self, logits: torch.Tensor, target: torch.Tensor):
+        print(logits.shape, target.shape)
         batch_size = logits.shape[0]
         probs = (logits >= 0.).view(batch_size, -1).float()
         target = (target > 0.).view(batch_size, -1).float()
         mult = target * probs
         mult = torch.sum(mult, dim=1)
         denom = torch.sum(probs, dim=1) + torch.sum(target, dim=1)
+        print(mult, denom)
         self.batched_dice += torch.mean((2 * mult + self.smooth) / (denom + self.smooth))
         self.total_batches += 1
         print(self.batched_dice, self.total_batches)
