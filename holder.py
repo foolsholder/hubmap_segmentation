@@ -22,8 +22,9 @@ class ModelHolder(pl.LightningModule):
     ):
         super(ModelHolder, self).__init__()
         self.segmentor = create_model(config['model_cfg'])
-
-        self.dice = Dice(0.5, 1e-7)
+        self.thr = 0.5
+        self.smooth = 1e-7
+        self.dice = Dice(self.thr, self.smooth)
 
     def training_step(
             self,
