@@ -9,8 +9,8 @@ class Dice(Metric):
         super().__init__()
         self.thr = thr
         self.smooth = smooth
-        self.add_state("batched_dice", default=torch.Tensor(0).float(), dist_reduce_fx="sum")
-        self.add_state("total_batches", default=torch.Tensor(0), dist_reduce_fx="sum")
+        self.add_state("batched_dice", default=torch.Tensor(0).float())
+        self.add_state("total_batches", default=torch.Tensor(0))
 
     def update(self, logits: torch.Tensor, target: torch.Tensor):
         print(logits.shape, target.shape)
@@ -22,7 +22,7 @@ class Dice(Metric):
         denom = torch.sum(probs, dim=1) + torch.sum(target, dim=1)
         print(mult, denom)
         self.batched_dice += torch.mean((2 * mult + self.smooth) / (denom + self.smooth))
-        self.total_batches += 1
+        self.total_batches += 1.0
         print("DICE info:", self.batched_dice, self.total_batches)
 
     def compute(self) -> torch.Tensor:
