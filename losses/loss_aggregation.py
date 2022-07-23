@@ -10,7 +10,7 @@ class LossAggregation(LossMetric):
     def __init__(
             self,
             weights: Dict[str, float],
-            loss_name: str = 'total_loss',
+            loss_name: str = 'loss',
     ):
         super().__init__(loss_name=loss_name)
         self._weights = weights

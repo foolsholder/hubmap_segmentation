@@ -11,7 +11,7 @@ from typing import (
     Callable, Union, Any, Sequence
 )
 from metrics.dice_metric import Dice
-from losses import BCELoss, SigmoidSoftDiceLoss, LossAggregation, LossMetric
+from losses import BCELoss, SigmoidSoftDiceLoss, LossAggregation, LossMetric, BinaryFocalLoss
 
 from models.utils import create_model
 
@@ -34,10 +34,10 @@ class ModelHolder(pl.LightningModule):
 
         losses: List[LossMetric] = [
             SigmoidSoftDiceLoss(loss_name='sigmoid_soft_dice'),
-            BCELoss(loss_name='bce'),
+            BinaryFocalLoss(loss_name='binary_focal_loss'),
             LossAggregation(
                 {
-                    'bce': 0.5,
+                    'binary_focal_loss': 1.0,
                     'sigmoid_soft_dice': 1.0
                 },
                 loss_name='loss'
@@ -93,10 +93,11 @@ class ModelHolder(pl.LightningModule):
     ) -> None:
         for metric_name in self.metrics_names:
             metric = self.__getattr__(metric_name)
-            self.log(metric.name, metric.compute(), prog_bar=True)
+            self.log(metric.name + '/valid', metric.compute(), prog_bar=True)
             metric.reset()
+        self.log_and_reset_losses()
 
-    def on_epoch_end(self) -> None:
+    def log_and_reset_losses(self) -> None:
         for loss_name in self.losses_names:
             loss = self.__getattr__(loss_name)
             for stage in ['train', 'valid']:
@@ -113,7 +114,7 @@ class ModelHolder(pl.LightningModule):
     def configure_optimizers(self):
         optim = torch.optim.AdamW(
             self.segmentor.parameters(),
-            lr=5e-3,
+            lr=1e-3,
             weight_decay=1e-3
         )
         scheduler = pl_bolts.optimizers.lr_scheduler.LinearWarmupCosineAnnealingLR(
