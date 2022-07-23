@@ -15,8 +15,8 @@ model_holder = ModelHolder(config)
 
 trainer = pl.Trainer(
     min_epochs=100,
-    accelerator='ddp',
-    gpus=4,
+    accelerator='gpu',
+    gpus=2,
     num_nodes=1,
     log_every_n_steps=1,
     weights_save_path=os.environ['SHUBMAP_EXPS']
