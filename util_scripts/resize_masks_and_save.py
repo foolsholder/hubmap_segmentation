@@ -22,16 +22,21 @@ def create_masks():
     df = pd.read_csv(csv_path)
 
     new_masks_path = os.path.join(root, 'resized_images/masks_{}'.format(H))
-
     if not os.path.exists(new_masks_path):
         os.makedirs(new_masks_path)
+
+    masks_full_ref = os.path.join(root, 'full_masks')
+    flag = False
+    if not os.path.exists(masks_full_ref):
+        os.makedirs(masks_full_ref)
+        flag = True
 
     for idx in trange(len(df)):
         row = df.iloc[idx]
         h = row['img_height']
         w = row['img_width']
 
-        tmp = np.zeros((h * w), dtype=np.float32)
+        tmp = np.zeros((h * w), dtype=np.uint8)
         id = row['id']
         id = str(id)
 
@@ -41,11 +46,14 @@ def create_masks():
         list_of_pairs = zip(fst, snd)
         for (i, length) in list_of_pairs:
             i -= 1
-            tmp[i:i+length] = 255.
+            tmp[i:i+length] = 1
 
         tmp = tmp.reshape((w, h)).T
-        tmp = cv2.resize(tmp, (H, H))
-        tmp /= 255.
+        if flag:
+            np.save(os.path.join(masks_full_ref, id), tmp)
+        tmp = Image.fromarray(tmp)
+        tmp = tmp.resize(size=(H, H), resample=Image.LANCZOS)
+        tmp = np.array(tmp, dtype=np.float32)
 
         np.save(os.path.join(new_masks_path, id), tmp)
 
@@ -72,9 +80,10 @@ def create_images():
         id = str(id)
 
         tmp = Image.open(os.path.join(root, 'train_images', id + '.tiff'))
+
+        tmp = tmp.resize(size=(H, H), resample=Image.LANCZOS)
         tmp = np.array(tmp)
 
-        tmp = cv2.resize(tmp, (H, H))
         np.save(os.path.join(new_images_path, id), tmp)
 
 

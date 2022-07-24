@@ -118,12 +118,12 @@ class DecodeBlock(nn.Module):
 
 #U-Net SeResNext101 + CBAM + hypercolumns + deepsupervision
 class UNET_SERESNEXT101(nn.Module):
-    def __init__(self, resolution, load_weights=True):
+    def __init__(self, load_weights=''):
         super().__init__()
 
         #encoder
         model_name = 'se_resnext101_32x4d'
-        if load_weights:
+        if load_weights == 'imagenet':
             seresnext101 = pretrainedmodels.__dict__[model_name](pretrained=None)
             path: str = os.path.join(os.environ['PRETRAINED'], 'se_resnext101_32x4d-3b2fe3d8.pth')
             seresnext101.load_state_dict(torch.load(path, map_location='cpu'), strict=False)
@@ -196,11 +196,19 @@ class UNET_SERESNEXT101(nn.Module):
         logits = self.final_conv(hypercol) #->(*,1,h,w)
 
         return {
-            "logits": logits
+            "logits": logits,
+            "probs": torch.sigmoid(logits)
         }
 
 
-def build_model(model_name, resolution, load_weights):
-    if model_name=='seresnext101':
-        model = UNET_SERESNEXT101(resolution, load_weights)
+def build_model(load_weights = ''):
+    model = UNET_SERESNEXT101(load_weights)
+    if load_weights == 'tom':
+        model.load_state_dict(
+            torch.load(
+                os.path.join(
+                    os.environ['PRETRAINED'],
+                    'model_seed0_fold0_bestscore.pth'),
+                map_location='cpu'
+            ), strict=False)
     return model

@@ -18,20 +18,21 @@ from albumentations.pytorch import ToTensorV2
 from typing import Union, Dict, Any, Optional
 from augmentations import get_simple_augmentations
 
-_HEIGHT = 512
-_WIDTH = 512
-
 
 class SDataset(Dataset):
     def __init__(
             self,
             train: bool = True,
             root: str = '',
-            augs: Optional[Compose] = None
+            augs: Optional[Compose] = None,
+            height: int = 512,
+            width: int = 512,
     ):
         super(SDataset, self).__init__()
         if root == '':
             root = os.environ['SDATASET_PATH']
+        self.height = height
+        self.width = width
         self.train = train
         self.data_folder: str = root
         self.root = root
@@ -43,7 +44,7 @@ class SDataset(Dataset):
             suffix_csv + '.csv'
         ))
         if augs is None:
-            augs = get_simple_augmentations(train)
+            augs = get_simple_augmentations(train, height=height, width=width)
         self.augs = augs
 
     def __len__(self) -> int:
@@ -59,21 +60,33 @@ class SDataset(Dataset):
         image = np.load(os.path.join(
             self.root,
             'resized_images',
-            'images_{}'.format(_HEIGHT),
+            'images_{}'.format(self.height),
             image_id + '.npy'
         ))
         # image currently in BGR format
         target = np.load(os.path.join(
             self.root,
             'resized_images',
-            'masks_{}'.format(_HEIGHT),
+            'masks_{}'.format(self.height),
             image_id + '.npy'
         ))
         aug_dict = self.get_augmented(image=image, mask=target)
-        return {
+        res = {
             "input_x": aug_dict['image'],
             "target": aug_dict['mask'][None]
         }
+        if not self.train:
+            full_target = np.load(os.path.join(
+                self.root,
+                'full_masks',
+                image_id + '.npy'
+            ))
+            res.update({
+                'full_target': torch.Tensor(full_target)[None],
+                'image_id': image_id,
+                'organ': row['organ']
+            })
+        return res
 
     def get_augmented(
             self,
@@ -85,15 +98,22 @@ class SDataset(Dataset):
             aug = self.augs(image=image, mask=mask)
         return aug
 
+
 def create_loader(
         train: bool = True,
         batch_size: int = 4,
-        num_workers: int = 4
+        num_workers: int = 4,
+        height: int = 512,
+        width: int = 512
     ) -> DataLoader:
-    dataset = SDataset(train)
+    dataset = SDataset(train, height=height, width=width)
     return DataLoader(
         dataset,
         batch_size=batch_size,
         num_workers=num_workers,
         shuffle=train
     )
+
+
+def create_loader_from_cfg(cfg_loader: Dict[str, Any]) -> DataLoader:
+    return create_loader(**cfg_loader)
