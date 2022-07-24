@@ -12,12 +12,13 @@ config = {
         'type': 'simple'
     },
     'wandb_cfg': {
-        'project': 'hubmap'
+        'project': 'hubmap',
+        'name': 'focal_bce+soft_dice_tom_imagenet'
     }
 }
 
 model_holder = ModelHolder(config)
-wandb_logger = WandbLogger(project=config['wandb_cfg']['project'])
+wandb_logger = WandbLogger(**config['wandb_cfg'])
 trainer = pl.Trainer(
     min_epochs=100,
     accelerator='ddp',

@@ -22,7 +22,7 @@ def create_model(model_cfg: "Model_cfg"):
     return build_model(
         model_name='seresnext101',
         resolution=(512, 512),
-        load_weights=False
+        load_weights=True
     )
     """
     possible_models = {

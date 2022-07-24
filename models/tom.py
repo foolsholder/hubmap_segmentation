@@ -2,6 +2,7 @@ import torch
 from torch import nn, optim
 import torch.nn.functional as F
 import sys
+import os
 from typing import Dict
 
 import pretrainedmodels
@@ -123,9 +124,12 @@ class UNET_SERESNEXT101(nn.Module):
         #encoder
         model_name = 'se_resnext101_32x4d'
         if load_weights:
-            seresnext101 = pretrainedmodels.__dict__[model_name](pretrained='imagenet')
+            seresnext101 = pretrainedmodels.__dict__[model_name](pretrained=None)
+            path: str = os.path.join(os.environ['PRETRAINED'], 'se_resnext101_32x4d-3b2fe3d8.pth')
+            seresnext101.load_state_dict(torch.load(path, map_location='cpu'), strict=False)
         else:
             seresnext101 = pretrainedmodels.__dict__[model_name](pretrained=None)
+
 
         self.encoder0 = nn.Sequential(
             seresnext101.layer0.conv1, #(*,3,h,w)->(*,64,h/2,w/2)
