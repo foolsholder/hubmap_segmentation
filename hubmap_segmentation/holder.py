@@ -10,10 +10,10 @@ from typing import (
     Dict, Optional, List, Tuple,
     Callable, Union, Any, Sequence
 )
-from metrics.dice_metric import Dice
-from losses import BCELoss, SigmoidSoftDiceLoss, LossAggregation, LossMetric, BinaryFocalLoss
+from .metrics.dice_metric import Dice
+from .losses import BCELoss, SigmoidSoftDiceLoss, LossAggregation, LossMetric, BinaryFocalLoss
 
-from models.utils import create_model
+from .models.utils import create_model
 
 
 class ModelHolder(pl.LightningModule):
@@ -143,13 +143,24 @@ class TTAHolder(ModelHolder):
         """
         only 'probs' is matter
         """
-        #idx_tta = [[-1], [-2], [-1, -2]]
+        idx_tta = [[-1], [-2], [-1, -2]]
         #idx_tta = [[-1]]
         #idx_tta = [[-2]]
-        idx_tta = []
+        #idx_tta = []
         preds = self.segmentor(input_x)
+        #preds['full_probs'] = F.interpolate(preds['probs'], size=self._shape, mode='bicubic')
         for idx_flip in idx_tta:
             preds_tta = self.segmentor(torch.flip(input_x, dims=idx_flip))
-            preds['probs'] += torch.flip(preds_tta['probs'], dims=idx_flip)
+            x = torch.flip(preds_tta['probs'], dims=idx_flip)
+            #x = F.interpolate(x, self._shape, mode='bicubic')
+            preds['probs'] += x
         preds['probs'] /= 1 + len(idx_tta)
         return preds
+
+    def validation_step(
+            self,
+            batch_dict: Dict[str, torch.Tensor],
+            batch_idx: int
+    ) -> Dict[str, Any]:
+        self._shape = batch_dict['full_target'].shape[-2:]
+        return super(TTAHolder, self).validation_step(batch_dict, batch_idx)

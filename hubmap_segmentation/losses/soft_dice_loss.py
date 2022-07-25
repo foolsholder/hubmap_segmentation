@@ -6,18 +6,12 @@ from typing import Dict, Any, Tuple
 from torch.nn import functional as F
 
 
-class TverskyLoss(LossMetric):
+class SigmoidSoftDiceLoss(LossMetric):
     def __init__(
             self,
-            loss_name: str = 'tversky_loss',
-            alpha: float = 0.7,
-            gamma: float = 0.75,
-            focal: bool = False
+            loss_name: str = 'sigmoid_soft_dice',
     ):
         super().__init__(loss_name=loss_name)
-        self.gamma = gamma
-        self.alpha = alpha
-        self.focal = focal
 
     def batch_loss_and_name(
             self,
@@ -34,12 +28,8 @@ class TverskyLoss(LossMetric):
 
         name = self._name
 
-        tp = (probs * target).sum() + 1.
-        fn = ((1-probs) * target).sum(dim=1) + 1.
-        fp = (probs * (1-target)).sum(dim=1) + 1.
-        denom = tp + self.alpha*fn + (1-self.alpha)*fp + 1.
-        tversky_loss = 1 - tp / denom
-        tversky_loss = torch.mean(tversky_loss)
-        if self.focal:
-            return name, torch.pow(tversky_loss, self.gamma)
-        return name, tversky_loss
+        mult = (2 * probs * target).sum(dim=1) + 1.
+        denom = probs.sum(dim=1) + target.sum(dim=1) + 1.
+        dice_loss = 1 - mult / denom
+        dice_loss = torch.mean(dice_loss)
+        return name, dice_loss

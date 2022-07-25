@@ -2,8 +2,8 @@ import pytorch_lightning as pl
 import os
 
 from torch.utils.data import DataLoader
-from holder import TTAHolder
-from sdataset import create_loader
+from hubmap_segmentation.holder import TTAHolder
+from hubmap_segmentation.sdataset import create_loader
 from pytorch_lightning.loggers import WandbLogger
 
 
@@ -31,12 +31,12 @@ trainer.validate(
         train=False,
         batch_size=1,
         num_workers=2,
-        height=1024,
-        width=1024
+        height=512,
+        width=512
     ),
     ckpt_path=os.path.join(
         os.environ['SHUBMAP_EXPS'],
-        'hubmap/28n1pttw/checkpoints',
-        'epoch.ckpt'
+        'focal_bce+soft_dice_tom_imagenet_512_titan4',
+        'epoch=49-step=8750.ckpt'
     )
 )
