@@ -34,9 +34,9 @@ class TverskyLoss(LossMetric):
 
         name = self._name
 
-        tp = (probs * target).sum() +1.
-        fn = ((1-probs) * target).sum() +1.
-        fp = (probs * (1-target)).sum() +1.
+        tp = (probs * target).sum() + 1.
+        fn = ((1-probs) * target).sum(dim=1) + 1.
+        fp = (probs * (1-target)).sum(dim=1) + 1.
         denom = tp + self.alpha*fn + (1-self.alpha)*fp + 1.
         tversky_loss = 1 - tp / denom
         tversky_loss = torch.mean(tversky_loss)
