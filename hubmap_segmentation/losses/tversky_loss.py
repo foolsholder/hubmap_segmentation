@@ -34,11 +34,11 @@ class TverskyLoss(LossMetric):
 
         name = self._name
 
-        tp = (probs * target).sum() + 1.
-        fn = ((1-probs) * target).sum(dim=1) + 1.
-        fp = (probs * (1-target)).sum(dim=1) + 1.
-        denom = tp + self.alpha*fn + (1-self.alpha)*fp + 1.
-        tversky_loss = 1 - tp / denom
+        tp = (probs * target).sum(dim=1)
+        fn = ((1-probs) * target).sum(dim=1)
+        fp = (probs * (1-target)).sum(dim=1)
+        denom = tp + self.alpha*fn + (1-self.alpha)*fp
+        tversky_loss = 1 - (tp + 1.) / (denom + 1.)
         tversky_loss = torch.mean(tversky_loss)
         if self.focal:
             return name, torch.pow(tversky_loss, self.gamma)
