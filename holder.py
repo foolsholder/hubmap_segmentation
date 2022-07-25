@@ -29,8 +29,8 @@ class ModelHolder(pl.LightningModule):
         metrics = [Dice(thr, smooth)]
         self.metrics_names = []
         for metric in metrics:
-            self.__setattr__(metric.name, metric)
-            self.metrics_names += [metric.name]
+            self.__setattr__(metric._name, metric)
+            self.metrics_names += [metric._name]
 
         self._stages_names = ['train', 'valid']
 
@@ -97,7 +97,9 @@ class ModelHolder(pl.LightningModule):
     ) -> None:
         for metric_name in self.metrics_names:
             metric = self.__getattr__(metric_name)
-            self.log(metric.name + '/valid', metric.compute(), prog_bar=True)
+            res_metric = metric.compute_every()
+            for k, v in res_metric.items():
+                self.log(k, v, prog_bar=True)
             metric.reset()
         self.log_and_reset_losses()
 

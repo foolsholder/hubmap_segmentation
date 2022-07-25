@@ -10,25 +10,25 @@ from pytorch_lightning.loggers import WandbLogger
 config = {
     'model_cfg': {
         'type': 'tom',
-        'load_weights': ''
+        'load_weights': 'imagenet'
     },
     'wandb_cfg': {
         'project': 'hubmap',
-        'name': 'focal_bce+soft_dice_tom'
+        'name': 'focal_bce+soft_dice_tom_imagenet_512_titan4'
     },
     'train_loader': {
         'train': True,
-        'batch_size': 1,
+        'batch_size': 4,
         'num_workers': 4,
-        'height': 1024,
-        'width': 1024
+        'height': 512,
+        'width': 512
     },
     'valid_loader': {
         'train': False,
         'batch_size': 1,
         'num_workers': 4,
-        'height': 1024,
-        'width': 1024
+        'height': 512,
+        'width': 512
     }
 }
 
@@ -40,9 +40,16 @@ trainer = pl.Trainer(
     gpus=4,
     num_nodes=1,
     log_every_n_steps=1,
-    weights_save_path=os.environ['SHUBMAP_EXPS'],
     gradient_clip_val=1.0,
-    callbacks=[pl.callbacks.LearningRateMonitor(logging_interval='step')],
+    callbacks=[
+        pl.callbacks.LearningRateMonitor(logging_interval='step'),
+        pl.callbacks.ModelCheckpoint(
+            dirpath=os.path.join(os.environ['SHUBMAP_EXPS'], config['wandb_cfg']['name']),
+            save_top_k=2,
+            monitor='dice/valid',
+            mode='max'
+        )
+    ],
     logger=wandb_logger
 )
 
