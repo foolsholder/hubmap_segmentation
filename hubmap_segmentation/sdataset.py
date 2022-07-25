@@ -16,7 +16,7 @@ from albumentations import (
 )
 from albumentations.pytorch import ToTensorV2
 from typing import Union, Dict, Any, Optional
-from augmentations import get_simple_augmentations
+from .augmentations import get_simple_augmentations
 
 
 class SDataset(Dataset):
@@ -48,7 +48,7 @@ class SDataset(Dataset):
         self.augs = augs
 
     def __len__(self) -> int:
-        return len(self.df) * (10 if self.train else 1)
+        return len(self.df) * (40 if self.train else 1)
 
     def __getitem__(
             self,

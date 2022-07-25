@@ -2,8 +2,8 @@ import pytorch_lightning as pl
 import os
 
 from torch.utils.data import DataLoader
-from holder import ModelHolder
-from sdataset import create_loader, create_loader_from_cfg
+from hubmap_segmentation.holder import ModelHolder
+from hubmap_segmentation.sdataset import create_loader, create_loader_from_cfg
 from pytorch_lightning.loggers import WandbLogger
 
 
@@ -13,7 +13,7 @@ config = {
         'load_weights': 'imagenet'
     },
     'wandb_cfg': {
-        'project': 'hubmap',
+        'project': 'hubmap_experimental',
         'name': 'focal_bce+soft_dice_tom_imagenet_512_titan4'
     },
     'train_loader': {

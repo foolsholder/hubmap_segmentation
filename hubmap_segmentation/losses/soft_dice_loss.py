@@ -28,8 +28,8 @@ class SigmoidSoftDiceLoss(LossMetric):
 
         name = self._name
 
-        mult = (2 * probs * target).sum() + 1.
-        denom = probs.sum() + target.sum() + 1.
+        mult = (2 * probs * target).sum(dim=1) + 1.
+        denom = probs.sum(dim=1) + target.sum(dim=1) + 1.
         dice_loss = 1 - mult / denom
         dice_loss = torch.mean(dice_loss)
         return name, dice_loss
