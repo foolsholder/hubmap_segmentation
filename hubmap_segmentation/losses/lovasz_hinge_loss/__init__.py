@@ -1,1 +1,1 @@
-from lovasz_hinge_loss import LovaszHingeLoss
+from .lovasz_hinge_loss import LovaszHingeLoss
