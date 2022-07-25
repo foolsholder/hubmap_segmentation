@@ -1,7 +1,7 @@
 import torch
 
 import pytorch_lightning as pl
-from .loss_metric import LossMetric
+from ..loss_metric import LossMetric
 from typing import Dict, Any, Tuple
 from torch.nn import functional as F
 from .utils import lovasz_hinge
