@@ -9,17 +9,17 @@ from pytorch_lightning.loggers import WandbLogger
 
 config = {
     'model_cfg': {
-        'type': 'tom',
+        'type': 'effnet',
         'load_weights': 'imagenet'
     },
     'wandb_cfg': {
-        'project': 'hubmap_experimental',
-        'name': 'focal_bce+soft_dice_tom_imagenet_512_titan4'
+        'project': 'hubmap',
+        'name': 'fbce+sdice+tversky+hinge_effnet_imagenet_512_A4'
     },
     'train_loader': {
         'train': True,
-        'batch_size': 4,
-        'num_workers': 4,
+        'batch_size': 40,
+        'num_workers': 20,
         'height': 512,
         'width': 512
     },
@@ -36,7 +36,7 @@ model_holder = ModelHolder(config)
 wandb_logger = WandbLogger(**config['wandb_cfg'])
 trainer = pl.Trainer(
     min_epochs=100,
-    accelerator='ddp',
+    strategy='ddp',
     gpus=4,
     num_nodes=1,
     log_every_n_steps=1,

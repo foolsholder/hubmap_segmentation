@@ -106,7 +106,7 @@ class EfficientNetV3(nn.Module):
                 nn.init.uniform_(m.weight, -init_range, init_range)
                 nn.init.zeros_(m.bias)
 
-    def _forward_impl(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
+    def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
         res: Dict[str,torch.Tensor] = {}
         x = self.input_conv(x)
         for layer_name in self.layers_names:
@@ -123,7 +123,7 @@ def _efficientnet(
         weights: Optional[WeightsEnum],
         progress: bool,
         **kwargs: Any,
-    ) -> EfficientNet:
+    ) -> EfficientNetV3:
     if weights is not None:
         _ovewrite_named_param(kwargs, "num_classes", len(weights.meta["categories"]))
 
@@ -140,25 +140,10 @@ def efficientnet_v2_m(
         weights: Optional[EfficientNet_V2_M_Weights] = None,
         progress: bool = True,
         **kwargs: Any
-    ) -> EfficientNet:
+    ) -> EfficientNetV3:
     """
-    Constructs an EfficientNetV2-M architecture from
-    `EfficientNetV2: Smaller Models and Faster Training <https://arxiv.org/abs/2104.00298>`_.
-
-    Args:
-        weights (:class:`~torchvision.models.EfficientNet_V2_M_Weights`, optional): The
-            pretrained weights to use. See
-            :class:`~torchvision.models.EfficientNet_V2_M_Weights` below for
-            more details, and possible values. By default, no pre-trained
-            weights are used.
-        progress (bool, optional): If True, displays a progress bar of the
-            download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.efficientnet.EfficientNet``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/efficientnet.py>`_
-            for more details about this class.
-    .. autoclass:: torchvision.models.EfficientNet_V2_M_Weights
-        :members:
+    Constructs an EfficientNetV3-M architecture from
+    `EfficientNetV3: Smaller Models and Faster Training <https://arxiv.org/abs/2104.00298>`_.
     """
     weights = EfficientNet_V2_M_Weights.verify(weights)
 

@@ -11,8 +11,12 @@ from typing import (
     Callable, Union, Any, Sequence
 )
 from .metrics.dice_metric import Dice
-from .losses import BCELoss, SigmoidSoftDiceLoss, LossAggregation, LossMetric, BinaryFocalLoss
-
+from .losses import (
+    BCELoss, SigmoidSoftDiceLoss,
+    LossAggregation, LossMetric,
+    BinaryFocalLoss, TverskyLoss,
+    LovaszHingeLoss
+)
 from .models.utils import create_model
 
 
@@ -35,12 +39,16 @@ class ModelHolder(pl.LightningModule):
         self._stages_names = ['train', 'valid']
 
         losses: List[LossMetric] = [
+            LovaszHingeLoss(loss_name='lovasz_hinge'),
             SigmoidSoftDiceLoss(loss_name='sigmoid_soft_dice'),
+            TverskyLoss(loss_name='tversky_loss'),
             BinaryFocalLoss(loss_name='binary_focal_loss'),
             LossAggregation(
                 {
+                    'lovasz_hinge': 1.0,
+                    'tversky_loss': 0.5,
                     'binary_focal_loss': 1.0,
-                    'sigmoid_soft_dice': 1.0
+                    'sigmoid_soft_dice': 0.5
                 },
                 loss_name='loss'
             )

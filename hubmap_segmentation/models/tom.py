@@ -203,7 +203,7 @@ class UNET_SERESNEXT101(nn.Module):
 
 def build_model(load_weights = ''):
     model = UNET_SERESNEXT101(load_weights)
-    if load_weights == 'tom':
+    if load_weights == 'kidney':
         model.load_state_dict(
             torch.load(
                 os.path.join(
