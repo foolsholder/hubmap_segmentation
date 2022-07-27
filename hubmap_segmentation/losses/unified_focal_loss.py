@@ -3,88 +3,7 @@ import torch.nn as nn
 from .loss_metric import LossMetric
 from typing import Dict, Any, Tuple
 from torch.nn import functional as F
-
-# Helper function to enable loss function to be flexibly used for
-# both 2D or 3D image segmentation - source: https://github.com/frankkramer-lab/MIScnn
-
-def identify_dim(shape):
-    # Three dimensional
-    if len(shape) == 5:
-        return [1, 2, 3]
-
-    # Two dimensional
-    elif len(shape) == 4:
-        return [1, 2]
-
-    # Exception - Unknown
-    else:
-        raise ValueError('Metric: Shape of tensor is neither 2D or 3D.')
-
-
-class SymmetricFocalLoss(nn.Module):
-    """
-    Parameters
-    ----------
-    delta : float, optional
-        controls weight given to false positive and false negatives, by default 0.7
-    gamma : float, optional
-        Focal Tversky loss' focal parameter controls degree of down-weighting of easy examples, by default 2.0
-    epsilon : float, optional
-        clip values to prevent division by zero error
-    """
-
-    def __init__(self, delta=0.7, gamma=2., epsilon=1e-07):
-        super(SymmetricFocalLoss, self).__init__()
-        self.delta = delta
-        self.gamma = gamma
-        self.epsilon = epsilon
-
-    def forward(self, y_pred, y_true):
-        y_pred = torch.clamp(y_pred, self.epsilon, 1. - self.epsilon)
-        cross_entropy = -y_true * torch.log(y_pred)
-
-        # Calculate losses separately for each class
-        ce = torch.pow(1 - y_pred, self.gamma) * cross_entropy
-        ce = (1 - self.delta) * ce
-        loss = torch.mean(ce)
-        return loss
-
-
-class SymmetricFocalTverskyLoss(nn.Module):
-    """This is the implementation for binary segmentation.
-    Parameters
-    ----------
-    delta : float, optional
-        controls weight given to false positive and false negatives, by default 0.7
-    gamma : float, optional
-        focal parameter controls degree of down-weighting of easy examples, by default 0.75
-    smooth : float, optional
-        smooithing constant to prevent division by 0 errors, by default 0.000001
-    epsilon : float, optional
-        clip values to prevent division by zero error
-    """
-
-    def __init__(self, delta=0.7, gamma=0.75, epsilon=1e-07):
-        super(SymmetricFocalTverskyLoss, self).__init__()
-        self.delta = delta
-        self.gamma = gamma
-        self.epsilon = epsilon
-
-    def forward(self, y_pred, y_true):
-        y_pred = torch.clamp(y_pred, self.epsilon, 1. - self.epsilon)
-        dim = identify_dim(y_true.size())
-
-        # Calculate true positives (tp), false negatives (fn) and false positives (fp)
-        tp = torch.sum(y_true * y_pred, dim=dim)
-        fn = torch.sum(y_true * (1 - y_pred), dim=dim)
-        fp = torch.sum((1 - y_true) * y_pred, dim=dim)
-        dice_class = (tp + self.epsilon) / (tp + self.delta * fn + (1 - self.delta) * fp + self.epsilon)
-
-        # Calculate losses separately for each class, enhancing both classes
-        dice = (1 - dice_class) * torch.pow(1 - dice_class, -self.gamma)
-        # Average class scores
-        loss = torch.mean(dice)
-        return loss
+from .tversky_loss import TverskyLoss
 
 class SymmetricUnifiedFocalLoss(LossMetric):
     """The Unified Focal loss is a new compound loss function that unifies Dice-based and cross entropy-based loss functions into a single framework.
@@ -121,9 +40,14 @@ class SymmetricUnifiedFocalLoss(LossMetric):
         target = batch['target']
 
         name = self._name
-        symmetric_ftl = SymmetricFocalTverskyLoss(delta=self.delta, gamma=self.gamma)(probs, target)
-        symmetric_fl = SymmetricFocalLoss(delta=self.delta, gamma=self.gamma)(probs, target)
+        tp = (probs * target).sum(dim=1)
+        fn = ((1 - probs) * target).sum(dim=1)
+        fp = (probs * (1 - target)).sum(dim=1)
+        denom = tp + self.delta * fn + (1 - self.delta) * fp
+        tversky_loss = torch.mean(1 - (tp + 1.) / (denom + 1.))
+
+        symmetric_fl = torch.mean(self.delta*torch.pow(1-probs, 1-self.gamma)*F.binary_cross_entropy(probs, target))
         if self.weight is not None:
-            return name, (self.weight * symmetric_ftl) + ((1-self.weight) * symmetric_fl)
+            return name, (self.weight * tversky_loss) + ((1-self.weight) * symmetric_fl)
         else:
-            return name, symmetric_ftl + symmetric_fl
+            return name, tversky_loss + symmetric_fl
