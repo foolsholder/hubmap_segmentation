@@ -44,14 +44,9 @@ class SymmetricFocalLoss(nn.Module):
         cross_entropy = -y_true * torch.log(y_pred)
 
         # Calculate losses separately for each class
-        back_ce = torch.pow(1 - y_pred[:, 0, :, :], self.gamma) * cross_entropy[:, 0, :, :]
-        back_ce = (1 - self.delta) * back_ce
-
-        fore_ce = torch.pow(1 - y_pred[:, 1, :, :], self.gamma) * cross_entropy[:, 1, :, :]
-        fore_ce = self.delta * fore_ce
-
-        loss = torch.mean(torch.sum(torch.stack([back_ce, fore_ce], dim=-1), dim=-1))
-
+        ce = torch.pow(1 - y_pred, self.gamma) * cross_entropy
+        ce = (1 - self.delta) * ce
+        loss = torch.mean(ce)
         return loss
 
 
@@ -86,11 +81,9 @@ class SymmetricFocalTverskyLoss(nn.Module):
         dice_class = (tp + self.epsilon) / (tp + self.delta * fn + (1 - self.delta) * fp + self.epsilon)
 
         # Calculate losses separately for each class, enhancing both classes
-        back_dice = (1 - dice_class[:, 0]) * torch.pow(1 - dice_class[:, 0], -self.gamma)
-        fore_dice = (1 - dice_class[:, 1]) * torch.pow(1 - dice_class[:, 1], -self.gamma)
-
+        dice = (1 - dice_class) * torch.pow(1 - dice_class, -self.gamma)
         # Average class scores
-        loss = torch.mean(torch.stack([back_dice, fore_dice], dim=-1))
+        loss = torch.mean(dice)
         return loss
 
 class SymmetricUnifiedFocalLoss(LossMetric):
@@ -108,7 +101,7 @@ class SymmetricUnifiedFocalLoss(LossMetric):
     """
     def __init__(
             self,
-            loss_name: str = 'binary_focal_loss',
+            loss_name: str = 'unified_focal_loss',
             weight: float = 0.5,
             delta: float = 0.6,
             gamma: float = 0.5

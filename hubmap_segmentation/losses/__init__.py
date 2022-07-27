@@ -5,6 +5,7 @@ from .bce_loss import BCELoss
 from .focal_loss import BinaryFocalLoss
 from .lovasz_hinge_loss import LovaszHingeLoss
 from .tversky_loss import TverskyLoss
+from .unified_focal_loss import SymmetricUnifiedFocalLoss
 
 __all__ = [
     "LossMetric",
