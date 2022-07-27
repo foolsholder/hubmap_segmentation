@@ -15,10 +15,19 @@ from .losses import (
     BCELoss, SigmoidSoftDiceLoss,
     LossAggregation, LossMetric,
     BinaryFocalLoss, TverskyLoss,
-    LovaszHingeLoss
+    LovaszHingeLoss, SymmetricUnifiedFocalLoss
 )
 from .models.utils import create_model
 
+available_losses = {
+    'bce': BCELoss,
+    'binary_focal_loss': BinaryFocalLoss,
+    'sigmoid_soft_dice': SigmoidSoftDiceLoss,
+    'tversky_loss': TverskyLoss,
+    'unified_focal_loss': SymmetricUnifiedFocalLoss,
+    'lovasz_hinge_loss': LovaszHingeLoss
+
+}
 
 class ModelHolder(pl.LightningModule):
     def __init__(
@@ -39,17 +48,9 @@ class ModelHolder(pl.LightningModule):
         self._stages_names = ['train', 'valid']
 
         losses: List[LossMetric] = [
-            LovaszHingeLoss(loss_name='lovasz_hinge'),
-            SigmoidSoftDiceLoss(loss_name='sigmoid_soft_dice'),
-            TverskyLoss(loss_name='tversky_loss'),
-            BinaryFocalLoss(loss_name='binary_focal_loss'),
+            *[available_losses[loss]() for loss in config['losses']['names']],
             LossAggregation(
-                {
-                    'lovasz_hinge': 1.0,
-                    'tversky_loss': 0.5,
-                    'binary_focal_loss': 1.0,
-                    'sigmoid_soft_dice': 0.5
-                },
+                dict(zip(config['losses']['names'], config['losses']['weights'])),
                 loss_name='loss'
             )
         ]
