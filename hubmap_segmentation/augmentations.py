@@ -17,6 +17,7 @@ from albumentations import (
 )
 from albumentations.pytorch import ToTensorV2
 from typing import Union, Dict, Any, Optional
+from .extra_augs import RandStainNA
 
 
 def get_simple_augmentations(
@@ -27,22 +28,16 @@ def get_simple_augmentations(
     if train:
         return Compose(
             [
+                RandomCrop(height, width, p=1.0),
                 RandomRotate90(p=0.6),
                 VerticalFlip(p=0.5),
                 HorizontalFlip(p=0.5),
-
+                RandStainNA(p=1.0),
                 #Morphology
-                ShiftScaleRotate(shift_limit=0, scale_limit=(-0.2,0.2), rotate_limit=(-30,30),
-                                 interpolation=1, border_mode=cv2.BORDER_REFLECT, p=0.5),
-                GaussianBlur(blur_limit=(3,7), p=0.5),
-                GaussNoise(var_limit=(0,25.0), mean=0, p=0.5),
-
+                ShiftScaleRotate(shift_limit=0, scale_limit=(-0.2,0.2), rotate_limit=(-45,45),
+                                 interpolation=1, border_mode=cv2.BORDER_REFLECT, p=0.75),
+                GaussianBlur(blur_limit=(3,5), p=0.5),
                 #Color
-                RandomBrightnessContrast(brightness_limit=0.35, contrast_limit=0.5,
-                                         brightness_by_max=True,p=0.5),
-                HueSaturationValue(hue_shift_limit=30, sat_shift_limit=30,
-                                   val_shift_limit=0, p=0.5),
-
                 CoarseDropout(max_holes=2,
                               max_height=height//4, max_width=width//4,
                               min_holes=1,

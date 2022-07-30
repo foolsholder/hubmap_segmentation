@@ -127,10 +127,10 @@ class ModelHolder(pl.LightningModule):
         return preds
 
     def configure_optimizers(self):
-        optim = torch.optim.RAdam(
+        optim = torch.optim.AdamW(
             self.segmentor.parameters(),
-            lr=3e-4,
-            weight_decay=1e-3,
+            lr=1e-3,
+            weight_decay=1e-2,
             betas=(0.9, 0.999),
             eps=1e-8
         )
@@ -138,6 +138,7 @@ class ModelHolder(pl.LightningModule):
             optim,
             warmup_epochs=20,
             warmup_start_lr=1e-6,
+            eta_min=1e-6,
             max_epochs=-1
         )
         return [optim], [scheduler]

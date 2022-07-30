@@ -5,6 +5,7 @@ import pandas as pd
 
 from sys import argv
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
 
 
 if __name__ == '__main__':
@@ -17,19 +18,26 @@ if __name__ == '__main__':
 
     df = pd.read_csv(os.path.join(root, 'train.csv'))
 
-    train_df = pd.DataFrame(columns=df.columns)
-    valid_df = pd.DataFrame(columns=df.columns)
+    K = 5
+    splitter = KFold(n_splits=K, shuffle=True, random_state=random_seed)
+
+    train_dfs = []
+    valid_dfs = []
+    for i in range(K):
+        train_dfs += [pd.DataFrame(columns=df.columns)]
+        valid_dfs += [pd.DataFrame(columns=df.columns)]
 
     for organ, subdf in df.groupby(['organ']):
-        sub_train_df, sub_valid_df = train_test_split(
-            subdf,
-            test_size=0.2,
-            random_state=random_seed,
-            shuffle=True,
-        )
-        train_df = pd.concat([train_df, sub_train_df])
-        valid_df = pd.concat([valid_df, sub_valid_df])
+        idx = 0
+        for train_idx, valid_idx in splitter.split(subdf):
+            train_dfs[idx] = pd.concat([subdf.iloc[train_idx], train_dfs[idx]])
+            valid_dfs[idx] = pd.concat([subdf.iloc[valid_idx], valid_dfs[idx]])
+            idx += 1
 
-    train_df.to_csv(os.path.join(root, 'csv_files', 'train.csv'), index=False)
-    valid_df.to_csv(os.path.join(root, 'csv_files', 'valid.csv'), index=False)
-
+    for idx, (train_df, valid_df) in enumerate(zip(train_dfs, valid_dfs)):
+        train_df.to_csv(
+            os.path.join(root, 'csv_files', 'train_{}.csv'.format(idx)),
+            index=False)
+        valid_df.to_csv(
+            os.path.join(root, 'csv_files', 'valid_{}.csv'.format(idx)),
+            index=False)

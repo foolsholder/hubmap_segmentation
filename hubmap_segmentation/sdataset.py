@@ -27,6 +27,7 @@ class SDataset(Dataset):
             augs: Optional[Compose] = None,
             height: int = 512,
             width: int = 512,
+            fold: Optional[int] = None
     ):
         super(SDataset, self).__init__()
         if root == '':
@@ -38,17 +39,18 @@ class SDataset(Dataset):
         self.root = root
         suffix_csv = 'train' if train else 'valid'
         self.suffix = suffix_csv
+        fold_str: str = ('_' + str(fold)) if fold is not None else ''
         self.df = pd.read_csv(os.path.join(
             root,
             'csv_files',
-            suffix_csv + '.csv'
+            suffix_csv + fold_str + '.csv'
         ))
         if augs is None:
             augs = get_simple_augmentations(train, height=height, width=width)
         self.augs = augs
 
     def __len__(self) -> int:
-        return len(self.df) * (100 if self.train else 1)
+        return len(self.df) * (10 if self.train else 1)
 
     def __getitem__(
             self,
@@ -104,9 +106,10 @@ def create_loader(
         batch_size: int = 4,
         num_workers: int = 4,
         height: int = 512,
-        width: int = 512
+        width: int = 512,
+        fold: Optional[int] = None
     ) -> DataLoader:
-    dataset = SDataset(train, height=height, width=width)
+    dataset = SDataset(train, height=height, width=width, fold=fold)
     return DataLoader(
         dataset,
         batch_size=batch_size,

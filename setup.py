@@ -1,8 +1,9 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="hubmap_segmentation",
-    packages=find_packages(include=["hubmap_segmentation"]),
+    name="hubmap-segmentation",
+    packages=find_packages(),
+    include_package_data=True,
     version="0.1.0",
     author="Me",
     license="MIT",
