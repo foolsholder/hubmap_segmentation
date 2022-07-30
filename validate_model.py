@@ -9,12 +9,8 @@ from pytorch_lightning.loggers import WandbLogger
 
 config = {
     'model_cfg': {
-        'type': 'tom',
+        'type': 'effnet',
         'load_weights': ''
-    },
-    'wandb_cfg': {
-        'project': 'hubmap',
-        'name': 'focal_bce+soft_dice_tom_kidney'
     }
 }
 
@@ -36,7 +32,7 @@ trainer.validate(
     ),
     ckpt_path=os.path.join(
         os.environ['SHUBMAP_EXPS'],
-        'focal_bce+soft_dice_tom_imagenet_512_titan4',
-        'epoch=49-step=8750.ckpt'
+        'bce+sdice_effnet_imagenet_512_T4',
+        'epoch.ckpt'
     )
 )

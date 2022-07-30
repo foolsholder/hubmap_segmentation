@@ -61,33 +61,27 @@ class SDataset(Dataset):
         image_id = str(row['id'])
         image = np.load(os.path.join(
             self.root,
-            'resized_images',
-            'images_{}'.format(self.height),
+            'full_images',
             image_id + '.npy'
         ))
         # image currently in BGR format
         target = np.load(os.path.join(
             self.root,
-            'resized_images',
-            'masks_{}'.format(self.height),
+            'full_masks',
             image_id + '.npy'
         ))
+        target = np.array(target, dtype=np.float32)
         aug_dict = self.get_augmented(image=image, mask=target)
         res = {
             "input_x": aug_dict['image'],
             "target": aug_dict['mask'][None]
         }
         if not self.train:
-            full_target = np.load(os.path.join(
-                self.root,
-                'full_masks',
-                image_id + '.npy'
-            ))
-            res.update({
-                'full_target': torch.Tensor(full_target)[None],
-                'image_id': image_id,
-                'organ': row['organ']
-            })
+            res['full_target'] = res['target']
+        res.update({
+            'image_id': image_id,
+            'organ': row['organ']
+        })
         return res
 
     def get_augmented(

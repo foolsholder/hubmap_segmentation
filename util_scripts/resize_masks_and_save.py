@@ -73,13 +73,20 @@ def create_images():
     if not os.path.exists(new_images_path):
         os.makedirs(new_images_path)
 
+    images_full_ref = os.path.join(root, 'full_images')
+    flag = False
+    if not os.path.exists(images_full_ref):
+        os.makedirs(images_full_ref)
+        flag = True
+
     for idx in trange(len(df)):
         row = df.iloc[idx]
         id = row['id']
         id = str(id)
 
         tmp = Image.open(os.path.join(root, 'train_images', id + '.tiff'))
-
+        if flag:
+            np.save(os.path.join(images_full_ref, id), tmp)
         tmp = tmp.resize(size=(H, H), resample=Image.LANCZOS)
         tmp = np.array(tmp)
 

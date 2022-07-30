@@ -24,8 +24,8 @@ else:
             'load_weights': 'imagenet'
         },
         'wandb_cfg': {
-            'project': 'hubmap_experimental',
-            'name': 'bce+sdice_effnet_imagenet_512_T4'
+            'project': 'hubmap',
+            'name': 'bce+sdice_rc_effnet_imagenet_512_T4'
         },
         'train_loader': {
             'train': True,
@@ -61,7 +61,7 @@ if 'seed' in config.keys():
 model_holder = ModelHolder(config)
 wandb_logger = WandbLogger(**config['wandb_cfg'])
 trainer = pl.Trainer(
-    min_epochs=100,
+    max_epochs=60,
     strategy='ddp',
     gpus=4,
     num_nodes=1,

@@ -26,7 +26,6 @@ available_losses = {
     'tversky_loss': TverskyLoss,
     'unified_focal_loss': SymmetricUnifiedFocalLoss,
     'lovasz_hinge_loss': LovaszHingeLoss
-
 }
 
 class ModelHolder(pl.LightningModule):
@@ -34,11 +33,14 @@ class ModelHolder(pl.LightningModule):
             self,
             config: Dict[str, Any],
             smooth: float = 1e-7,
+            tiling_height: int = 512,
+            tiling_width: int = 512,
             thr: float = 0.5
     ):
         super(ModelHolder, self).__init__()
         self.segmentor: torch.nn.Module = create_model(config['model_cfg'])
-
+        self.tiling_height = tiling_height
+        self.tiling_width = tiling_width
         metrics = [Dice(thr, smooth)]
         self.metrics_names = []
         for metric in metrics:
@@ -47,13 +49,18 @@ class ModelHolder(pl.LightningModule):
 
         self._stages_names = ['train', 'valid']
 
-        losses: List[LossMetric] = [
-            *[available_losses[loss]() for loss in config['losses']['names']],
-            LossAggregation(
-                dict(zip(config['losses']['names'], config['losses']['weights'])),
-                loss_name='loss'
-            )
-        ]
+        losses: List[LossMetric] = []
+        if 'losses' in config:
+            losses = [
+                *[available_losses[loss]() for loss in config['losses']['names']],
+            ]
+        if len(losses) > 0:
+            losses += [
+                LossAggregation(
+                    dict(zip(config['losses']['names'], config['losses']['weights'])),
+                    loss_name='loss'
+                )
+            ]
         self.losses_names = []
         for loss in losses:
             self.__setattr__(loss._name, loss)
@@ -70,9 +77,10 @@ class ModelHolder(pl.LightningModule):
             batch_dict: Dict[str, torch.Tensor]
     ) -> Dict[str, Any]:
         input_x = batch_dict['input_x']
-        preds: Dict[str, torch.Tensor] = self.forward(input_x)
 
         stage: str = 'train' if self.segmentor.training else 'valid'
+        self._stage = stage
+        preds: Dict[str, torch.Tensor] = self.forward(input_x)
 
         for loss_name in self.losses_names:
             loss = self.__getattr__(loss_name)
@@ -94,7 +102,6 @@ class ModelHolder(pl.LightningModule):
             batch_idx: int
     ) -> Dict[str, Any]:
         preds = self._step_logic(batch_dict)
-
         for metric_name in self.metrics_names:
             metric = self.__getattr__(metric_name)
             metric.update(preds, batch_dict)
@@ -121,10 +128,47 @@ class ModelHolder(pl.LightningModule):
                     self.log(k, v, prog_bar=True)
             loss.reset()
 
-    def forward(self, input_x: torch.Tensor) -> Dict[str, Any]:
-        preds: Dict[str, torch.Tensor] = self.segmentor(input_x)
+    def forward(
+            self,
+            input_x: torch.Tensor,
+    ) -> Dict[str, Any]:
+        if self._stage == 'train':
+            preds: Dict[str, torch.Tensor] = self.segmentor(input_x)
+        else:
+            preds = self.tiling(input_x)
         # preds['probs'] = torch.sigmoid(preds['logits'])
         return preds
+
+    def tiling(self, input_x: torch.Tensor) -> Dict[str, torch.Tensor]:
+        # ONLY VALIDATION WITH BATCH_SIZE == 1
+        h, w = input_x.shape[2:]
+
+        shift_h = self.tiling_height - self.tiling_height // 4
+        shift_w = self.tiling_width - self.tiling_width // 4
+        weight = torch.zeros((h, w)).to(input_x.device)
+        probs = torch.zeros((h, w)).to(input_x.device)
+        logits = torch.zeros((h, w)).to(input_x.device)
+
+        h_cnt = (h - 1) // shift_h + 1
+        w_cnt = (w - 1) // shift_w + 1
+        for h_idx in range(h_cnt):
+            h_right = min(h, shift_h * h_idx + self.tiling_height)
+            h_left = h_right - self.tiling_height
+            for w_idx in range(w_cnt):
+                w_right = min(w, shift_w * w_idx + self.tiling_width)
+                w_left = w_right - self.tiling_width
+
+                weight[h_left:h_right, w_left:w_right] += 1
+                input_window = input_x[:, :, h_left:h_right, w_left:w_right]
+                preds = self.segmentor(input_window)
+                window_probs = preds['probs'][0, 0]
+                window_logits = preds['logits'][0, 0]
+                probs[h_left:h_right, w_left:w_right] += window_probs
+                logits[h_left:h_right, w_left:w_right] += window_logits
+        return {
+            "probs": (probs / weight)[None, None],
+            "logits": (logits / weight)[None, None]
+        }
 
     def configure_optimizers(self):
         optim = torch.optim.AdamW(
@@ -142,7 +186,6 @@ class ModelHolder(pl.LightningModule):
             max_epochs=-1
         )
         return [optim], [scheduler]
-
 
 class TTAHolder(ModelHolder):
     def __init__(self, *args, **kwargs):
