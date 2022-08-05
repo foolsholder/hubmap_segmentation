@@ -23,7 +23,7 @@ if __name__ == '__main__':
     for organ, subdf in df.groupby(['organ']):
         sub_train_df, sub_test_df = train_test_split(
             subdf,
-            test_size=0.2,
+            test_size=0.1,
             random_state=random_seed,
             shuffle=True,
         )
