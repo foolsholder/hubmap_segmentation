@@ -5,6 +5,7 @@ import pl_bolts
 
 import pytorch_lightning as pl
 
+from copy import deepcopy
 from torch.nn import functional as F
 from typing import (
     Dict, Optional, List, Tuple,
@@ -38,6 +39,7 @@ class ModelHolder(pl.LightningModule):
             thr: float = 0.5
     ):
         super(ModelHolder, self).__init__()
+        self._config = deepcopy(config)
         self.segmentor: torch.nn.Module = create_model(config['model_cfg'])
         self.tiling_height = tiling_height
         self.tiling_width = tiling_width
@@ -132,60 +134,26 @@ class ModelHolder(pl.LightningModule):
             self,
             input_x: torch.Tensor,
     ) -> Dict[str, Any]:
-        if self._stage == 'train':
-            preds: Dict[str, torch.Tensor] = self.segmentor(input_x)
-        else:
-            preds = self.tiling(input_x)
-        # preds['probs'] = torch.sigmoid(preds['logits'])
+        preds: Dict[str, torch.Tensor] = self.segmentor(input_x)
         return preds
 
-    def tiling(self, input_x: torch.Tensor) -> Dict[str, torch.Tensor]:
-        # ONLY VALIDATION WITH BATCH_SIZE == 1
-        h, w = input_x.shape[2:]
-
-        shift_h = self.tiling_height - self.tiling_height // 4
-        shift_w = self.tiling_width - self.tiling_width // 4
-        weight = torch.zeros((h, w)).to(input_x.device)
-        probs = torch.zeros((h, w)).to(input_x.device)
-        logits = torch.zeros((h, w)).to(input_x.device)
-
-        h_cnt = (h - 1) // shift_h + 1
-        w_cnt = (w - 1) // shift_w + 1
-        for h_idx in range(h_cnt):
-            h_right = min(h, shift_h * h_idx + self.tiling_height)
-            h_left = h_right - self.tiling_height
-            for w_idx in range(w_cnt):
-                w_right = min(w, shift_w * w_idx + self.tiling_width)
-                w_left = w_right - self.tiling_width
-
-                weight[h_left:h_right, w_left:w_right] += 1
-                input_window = input_x[:, :, h_left:h_right, w_left:w_right]
-                preds = self.segmentor(input_window)
-                window_probs = preds['probs'][0, 0]
-                window_logits = preds['logits'][0, 0]
-                probs[h_left:h_right, w_left:w_right] += window_probs
-                logits[h_left:h_right, w_left:w_right] += window_logits
-        return {
-            "probs": (probs / weight)[None, None],
-            "logits": (logits / weight)[None, None]
-        }
-
     def configure_optimizers(self):
-        optim = torch.optim.AdamW(
+        optim = torch.optim.RAdam(
             self.segmentor.parameters(),
-            lr=1e-3,
-            weight_decay=1e-2,
+            lr=1e-4,
+            weight_decay=1e-3,
             betas=(0.9, 0.999),
             eps=1e-8
         )
         scheduler = pl_bolts.optimizers.lr_scheduler.LinearWarmupCosineAnnealingLR(
             optim,
-            warmup_epochs=20,
-            warmup_start_lr=1e-6,
-            eta_min=1e-6,
+            warmup_epochs=75,
+            warmup_start_lr=1e-7,
+            eta_min=1e-7,
             max_epochs=-1
         )
         return [optim], [scheduler]
+
 
 class TTAHolder(ModelHolder):
     def __init__(self, *args, **kwargs):
@@ -196,24 +164,80 @@ class TTAHolder(ModelHolder):
         """
         only 'probs' is matter
         """
-        idx_tta = [[-1], [-2], [-1, -2]]
-        #idx_tta = [[-1]]
-        #idx_tta = [[-2]]
-        #idx_tta = []
-        preds = self.segmentor(input_x)
+        idx_tta = [
+            ('flip', [-1]),
+            ('flip', [-2]),
+            ('flip', [-1, -2]),
+            ('transpose', None),
+            ('rotate90', 1),
+            ('rotate90', 2),
+            ('rotate90', 3),
+        ]
+        batch_input = [input_x]
+
         #preds['full_probs'] = F.interpolate(preds['probs'], size=self._shape, mode='bicubic')
-        for idx_flip in idx_tta:
-            preds_tta = self.segmentor(torch.flip(input_x, dims=idx_flip))
-            x = torch.flip(preds_tta['probs'], dims=idx_flip)
+        for type_aug, args_aug in idx_tta:
+            input_y = input_x
+            if type_aug == 'flip':
+                input_y = torch.flip(input_y, dims=args_aug)
+            elif type_aug == 'transpose':
+                input_y = torch.transpose(input_y, dim0=2, dim1=3)
+            elif type_aug == 'rotate90':
+                input_y = torch.rot90(input_y, k=args_aug, dims=[2, 3])
+            batch_input += [input_y]
+
+        batch_input = torch.cat(batch_input, dim=0)
+        preds = self.segmentor(batch_input)
+        preds.pop('logits')
+
+        idx_preds = 1
+        for type_aug, args_aug in idx_tta:
+            x = preds['probs'][idx_preds:idx_preds+1].clone()
+            if type_aug == 'flip':
+                x = torch.flip(x, dims=args_aug)
+            elif type_aug == 'transpose':
+                x = torch.transpose(x, dim0=2, dim1=3)
+            elif type_aug == 'rotate90':
+                x = torch.rot90(x, k=4-args_aug, dims=[2, 3])
             #x = F.interpolate(x, self._shape, mode='bicubic')
-            preds['probs'] += x
-        preds['probs'] /= 1 + len(idx_tta)
+            preds['probs'][idx_preds:idx_preds+1] = x
+            idx_preds += 1
+
+        preds['probs'] = torch.mean(preds['probs'], dim=0, keepdim=True)
         return preds
 
-    def validation_step(
-            self,
-            batch_dict: Dict[str, torch.Tensor],
-            batch_idx: int
-    ) -> Dict[str, Any]:
-        self._shape = batch_dict['full_target'].shape[-2:]
-        return super(TTAHolder, self).validation_step(batch_dict, batch_idx)
+
+def _clear_segmentor_prefix(state_dict: Dict[str, Any]) -> Dict[str, Any]:
+        res = type(state_dict)()
+        str_patt = 'segmentor.'
+        for k, v in state_dict.items():
+            new_k = k[len(str_patt):]
+            res[new_k] = v
+        return res
+
+
+class EnsembleHolder(TTAHolder):
+    def __init__(self, ckpt_path_list: List[str], *args, **kwargs):
+        super(EnsembleHolder, self).__init__(*args, **kwargs)
+        self._stages_names = ['valid']
+        self.state_dicts = []
+        for path in ckpt_path_list:
+            state_dict = torch.load(path, map_location='cpu')
+            state_dict = state_dict['state_dict']
+            state_dict = _clear_segmentor_prefix(state_dict)
+            self.state_dicts += [state_dict]
+
+    def forward(self, input_x: torch.Tensor) -> Dict[str, Any]:
+        probs = []
+
+        for st in self.state_dicts:
+            self.segmentor.load_state_dict(st)
+            preds_tmp = super(EnsembleHolder, self).forward(input_x)
+            probs += [preds_tmp['probs']]
+
+        probs = torch.cat(probs, dim=0)
+        probs = torch.mean(probs, dim=0, keepdim=True)
+        preds = {
+            'probs': probs
+        }
+        return preds

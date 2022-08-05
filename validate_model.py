@@ -2,19 +2,28 @@ import pytorch_lightning as pl
 import os
 
 from torch.utils.data import DataLoader
-from hubmap_segmentation.holder import TTAHolder
+from hubmap_segmentation.holder import EnsembleHolder
 from hubmap_segmentation.sdataset import create_loader
 from pytorch_lightning.loggers import WandbLogger
 
 
 config = {
     'model_cfg': {
-        'type': 'effnet',
+        'type': 'tom',
         'load_weights': ''
     }
 }
 
-model_holder = TTAHolder(config)
+model_holder = EnsembleHolder(
+    config=config,
+    ckpt_path_list=[
+        os.path.join(
+            os.environ['SHUBMAP_EXPS'],
+            'fbce+sdice_tom_kidney_radam_512_T4_F0',
+            'epoch=119-step=2160.ckpt'
+        )
+    ]
+)
 
 trainer = pl.Trainer(
     accelerator='gpu',
@@ -29,10 +38,5 @@ trainer.validate(
         num_workers=2,
         height=512,
         width=512
-    ),
-    ckpt_path=os.path.join(
-        os.environ['SHUBMAP_EXPS'],
-        'bce+sdice_effnet_imagenet_512_T4',
-        'epoch.ckpt'
     )
 )

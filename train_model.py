@@ -20,20 +20,20 @@ if args.config_path:
 else:
     config = {
         'model_cfg': {
-            'type': 'effnet',
-            'load_weights': 'imagenet'
+            'type': 'tom',
+            'load_weights': 'kidney_0'
         },
         'wandb_cfg': {
             'project': 'hubmap',
-            'name': 'bce+sdice_rc_effnet_imagenet_512_T4'
+            'name': 'fbce+sdice_tom_kidney_radam_512_T4_F0'
         },
         'train_loader': {
             'train': True,
-            'batch_size': 11,
+            'batch_size': 4,
             'num_workers': 8,
             'height': 512,
             'width': 512,
-            'fold': None
+            'fold': 0
         },
         'valid_loader': {
             'train': False,
@@ -41,12 +41,12 @@ else:
             'num_workers': 4,
             'height': 512,
             'width': 512,
-            'fold': None
+            'fold': 0
         },
         'losses': {
             'weights': [1.0, 1.0],
             'names': [
-                'bce',
+                'binary_focal_loss',
                 'sigmoid_soft_dice'
             ]
         },
@@ -61,7 +61,7 @@ if 'seed' in config.keys():
 model_holder = ModelHolder(config)
 wandb_logger = WandbLogger(**config['wandb_cfg'])
 trainer = pl.Trainer(
-    max_epochs=60,
+    max_epochs=150,
     strategy='ddp',
     gpus=4,
     num_nodes=1,
@@ -74,7 +74,8 @@ trainer = pl.Trainer(
                 os.environ['SHUBMAP_EXPS'],
                 config['wandb_cfg']['name']
             ),
-            save_top_k=2,
+            save_weights_only=True,
+            save_top_k=10,
             monitor='dice/valid',
             mode='max'
         )

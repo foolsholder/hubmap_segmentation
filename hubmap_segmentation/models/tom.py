@@ -203,12 +203,14 @@ class UNET_SERESNEXT101(nn.Module):
 
 def build_model(load_weights = ''):
     model = UNET_SERESNEXT101(load_weights)
-    if load_weights == 'kidney':
+    if 'kidney' in load_weights:
+        num = int(load_weights.split('_')[1])
+        idx = min(3, num)
         model.load_state_dict(
             torch.load(
                 os.path.join(
                     os.environ['PRETRAINED'],
-                    'model_seed0_fold0_bestscore.pth'),
+                    'model_seed0_fold{}_bestscore.pth'.format(idx)),
                 map_location='cpu'
             ), strict=False)
     return model

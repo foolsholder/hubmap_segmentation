@@ -4,14 +4,14 @@ import cv2
 from albumentations import (
     Resize,
     Normalize,
-    Compose,
+    Compose, Transpose,
     HorizontalFlip,
     VerticalFlip, Rotate, RandomRotate90,
     ShiftScaleRotate, ElasticTransform,
     GridDistortion, RandomSizedCrop, RandomCrop, CenterCrop,
     RandomBrightnessContrast, HueSaturationValue, IAASharpen,
     RandomGamma, RandomBrightness, RandomBrightnessContrast,
-    GaussianBlur,CLAHE,
+    GaussianBlur, CLAHE,
     Cutout, CoarseDropout, GaussNoise, ChannelShuffle, ToGray, OpticalDistortion,
     Normalize, OneOf, NoOp
 )
@@ -28,25 +28,33 @@ def get_simple_augmentations(
     if train:
         return Compose(
             [
-                RandomCrop(height, width, p=1.0),
-                RandomRotate90(p=0.6),
+                #RandomCrop(height, width, p=1.0),
+                RandomRotate90(p=0.5),
                 VerticalFlip(p=0.5),
                 HorizontalFlip(p=0.5),
+                Transpose(p=0.5),
+
                 #RandStainNA(p=1.0),
                 #Morphology
                 ShiftScaleRotate(shift_limit=0, scale_limit=(-0.2,0.2), rotate_limit=(-45,45),
-                                 interpolation=1, border_mode=cv2.BORDER_REFLECT, p=0.75),
+                                 interpolation=1, border_mode=0, p=0.75),
                 GaussianBlur(blur_limit=(3,5), p=0.5),
                 #Color
+                OneOf(
+                    [
+                        RandomGamma(p=0.5),
+                        RandomBrightnessContrast(brightness_limit=0.35, contrast_limit=0.5,
+                                                 brightness_by_max=True,p=0.5),
+                        HueSaturationValue(hue_shift_limit=30, sat_shift_limit=30,
+                                           val_shift_limit=0, p=0.5),
+                    ],
+                    p=0.875
+                ),
                 CoarseDropout(max_holes=2,
                               max_height=height//4, max_width=width//4,
                               min_holes=1,
                               min_height=height//16, min_width=width//16,
                               fill_value=0, mask_fill_value=0, p=0.5),
-                RandomBrightnessContrast(brightness_limit=0.35, contrast_limit=0.5,
-                                         brightness_by_max=True,p=0.5),
-                HueSaturationValue(hue_shift_limit=30, sat_shift_limit=30,
-                                   val_shift_limit=0, p=0.5),
                 Normalize(),
                 ToTensorV2()
             ]
