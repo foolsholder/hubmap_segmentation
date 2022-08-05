@@ -34,6 +34,7 @@ trainer.validate(
     model=model_holder,
     dataloaders=create_loader(
         train=False,
+        test=True,
         batch_size=1,
         num_workers=2,
         height=512,

@@ -16,9 +16,9 @@ if __name__ == '__main__':
 
     random_seed = 1_019_541
 
-    df = pd.read_csv(os.path.join(root, 'train.csv'))
+    df = pd.read_csv(os.path.join(root, 'csv_files', 'train.csv'))
 
-    K = 5
+    K = 4
     splitter = KFold(n_splits=K, shuffle=True, random_state=random_seed)
 
     train_dfs = []
