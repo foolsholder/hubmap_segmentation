@@ -20,7 +20,7 @@ model_holder = EnsembleHolder(
         os.path.join(
             os.environ['SHUBMAP_EXPS'],
             'fbce+sdice_tom_kidney_radam_512_T4_F0',
-            'epoch=119-step=2160.ckpt'
+            'epoch.ckpt'
         )
     ]
 )
