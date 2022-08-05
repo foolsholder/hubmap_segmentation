@@ -1,0 +1,34 @@
+{
+  "model_cfg": {
+    "type": "tom",
+    "load_weights": "kidney_1"
+  },
+  "wandb_cfg": {
+    "project": "hubmap",
+    "name": "fbce+sdice_tom_kidney_radam_512_T4_F1"
+  },
+  "train_loader": {
+    "train": true,
+    "batch_size": 4,
+    "num_workers": 8,
+    "height": 512,
+    "width": 512,
+    "fold": 1
+  },
+  "valid_loader": {
+    "train": false,
+    "batch_size": 1,
+    "num_workers": 4,
+    "height": 512,
+    "width": 512,
+    "fold": 1
+  },
+  "losses": {
+    "weights": [1.0, 1.0],
+    "names": [
+        "binary_focal_loss",
+        "sigmoid_soft_dice"
+    ]
+  },
+  "seed": 3496295
+}
