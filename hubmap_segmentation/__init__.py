@@ -2,5 +2,6 @@ import hubmap_segmentation.models
 import hubmap_segmentation.metrics
 import hubmap_segmentation.losses
 import hubmap_segmentation.augmentations
-import hubmap_segmentation.holder
+import hubmap_segmentation.holders
+import hubmap_segmentation.holders.holder
 import hubmap_segmentation.sdataset

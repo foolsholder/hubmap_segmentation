@@ -6,9 +6,8 @@ import torch
 import numpy as np
 
 from typing import Dict, Union
-from torch.utils.data import DataLoader
-from hubmap_segmentation.holder import ModelHolder
-from hubmap_segmentation.sdataset import create_loader, create_loader_from_cfg
+from hubmap_segmentation.holders.holder import ModelHolder
+from hubmap_segmentation.sdataset import create_loader_from_cfg
 from pytorch_lightning.loggers import WandbLogger
 
 
@@ -16,8 +15,8 @@ parser = argparse.ArgumentParser(description='Get config')
 parser.add_argument('--config_path', type=str, required=True, default='')
 args = parser.parse_args()
 
-config: Dict[str, Union[Dict, str]] = json.load(open(args.config_path, 'r'))
-
+config: Dict[str, Union[Dict, str, int]] = json.load(open(args.config_path, 'r'))
+max_epochs: int = config['max_epochs']
 if 'seed' in config.keys():
     if config['seed']:
         torch.manual_seed(config['seed'])
@@ -26,7 +25,7 @@ if 'seed' in config.keys():
 model_holder = ModelHolder(config)
 wandb_logger = WandbLogger(**config['wandb_cfg'])
 trainer = pl.Trainer(
-    max_epochs=300,
+    max_epochs=max_epochs,
     strategy='ddp',
     gpus=4,
     num_nodes=1,

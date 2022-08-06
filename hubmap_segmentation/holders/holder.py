@@ -12,14 +12,15 @@ from typing import (
     Dict, Optional, List, Tuple,
     Callable, Union, Any, Sequence
 )
-from .metrics.dice_metric import Dice
-from .losses import (
+from hubmap_segmentation.metrics.dice_metric import Dice
+from hubmap_segmentation.losses import (
     BCELoss, SigmoidSoftDiceLoss,
     LossAggregation, LossMetric,
     BinaryFocalLoss, TverskyLoss,
     LovaszHingeLoss, SymmetricUnifiedFocalLoss
 )
-from .models.utils import create_model
+from hubmap_segmentation.holders.optimizer_utils import create_opt_shed
+from hubmap_segmentation.models.utils import create_model
 
 available_losses = {
     'bce': BCELoss,
@@ -29,6 +30,7 @@ available_losses = {
     'unified_focal_loss': SymmetricUnifiedFocalLoss,
     'lovasz_hinge_loss': LovaszHingeLoss
 }
+
 
 class ModelHolder(pl.LightningModule):
     def __init__(
@@ -140,21 +142,7 @@ class ModelHolder(pl.LightningModule):
         return preds
 
     def configure_optimizers(self):
-        optim = torch.optim.RAdam(
-            self.segmentor.parameters(),
-            lr=3e-4,
-            weight_decay=1e-3,
-            betas=(0.9, 0.999),
-            eps=1e-8
-        )
-        scheduler = pl_bolts.optimizers.lr_scheduler.LinearWarmupCosineAnnealingLR(
-            optim,
-            warmup_epochs=75,
-            warmup_start_lr=1e-7,
-            eta_min=1e-7,
-            max_epochs=-1
-        )
-        return [optim], [scheduler]
+        return create_opt_shed(self._config['opt_sched'], self.segmentor.parameters())
 
 
 class TTAHolder(ModelHolder):

@@ -3,8 +3,25 @@
     "type": "tom",
     "load_weights": "kidney_0"
   },
+  "max_epochs": 300,
+  "opt_sched": {
+    "opt": {
+      "type": "AdamW",
+      "lr": 1e-4,
+      "weight_decay": 1e-3,
+      "betas": [0.9, 0.999],
+      "eps": 1e-8
+    },
+    "sched": {
+      "type": "LinearWarmupCosineAnnealingLR",
+      "warmup_epochs": 25,
+      "warmup_start_lr": 1e-6,
+      "eta_min": 1e-6,
+      "max_epochs": 25
+    }
+  },
   "wandb_cfg": {
-    "project": "hubmap",
+    "project": "hubmap_experimental",
     "name": "fbce+sdice_tom_kidney_radam_512_T4_F0_SA"
   },
   "train_loader": {

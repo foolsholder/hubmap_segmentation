@@ -1,11 +1,8 @@
 import pytorch_lightning as pl
 import os
 
-from torch.utils.data import DataLoader
-from hubmap_segmentation.holder import EnsembleHolder
+from hubmap_segmentation.holders.holder import EnsembleHolder
 from hubmap_segmentation.sdataset import create_loader
-from pytorch_lightning.loggers import WandbLogger
-
 
 config = {
     'model_cfg': {
