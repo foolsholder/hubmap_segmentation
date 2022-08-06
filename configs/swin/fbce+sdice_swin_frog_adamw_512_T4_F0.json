@@ -1,0 +1,49 @@
+{
+  "model_cfg": {
+    "type": "swin",
+    "load_weights": "frog"
+  },
+  "max_epochs": 300,
+  "opt_sched": {
+    "opt": {
+      "type": "AdamW",
+      "lr": 1e-4,
+      "weight_decay": 1e-3,
+      "betas": [0.9, 0.999],
+      "eps": 1e-8
+    }
+  },
+  "wandb_cfg": {
+    "project": "hubmap",
+    "name": "fbce+sdice_swin_frog_adamw_512_T4_F0_SA"
+  },
+  "train_loader": {
+    "train": true,
+    "batch_size": 8,
+    "num_workers": 8,
+    "height": 512,
+    "width": 512,
+    "fold": 0
+  },
+  "valid_loader": {
+    "train": false,
+    "batch_size": 1,
+    "num_workers": 4,
+    "height": 512,
+    "width": 512,
+    "fold": 0
+  },
+  "losses": {
+    "weights": [1.0, 1.0],
+    "names": [
+        "binary_focal_loss",
+        "sigmoid_soft_dice"
+    ]
+  },
+  "seed": 3496295,
+  "strategy": "ddp",
+  "gpus": 2,
+  "num_nodes": 1,
+  "log_every_n_steps": 1,
+  "gradient_clip_val": 1.0
+}

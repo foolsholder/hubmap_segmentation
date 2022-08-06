@@ -28,6 +28,8 @@ def get_simple_augmentations(
     if train:
         return Compose(
             [
+
+                #RandomCrop(height, width, p=1.0),
                 #Morphology
                 RandomResizedCrop(
                     height=height,
@@ -36,16 +38,16 @@ def get_simple_augmentations(
                     interpolation=cv2.INTER_LANCZOS4,
                     always_apply=True
                 ),
+                RandomRotate90(p=0.5),
+                VerticalFlip(p=0.5),
+                HorizontalFlip(p=0.5),
+                Transpose(p=0.5),
+
                 ShiftScaleRotate(shift_limit=0, scale_limit=0.01,
                                  rotate_limit=(-45,45),
                                  interpolation=cv2.INTER_LANCZOS4,
                                  border_mode=0, p=0.5),
 
-                #RandomCrop(height, width, p=1.0),
-                RandomRotate90(p=0.5),
-                VerticalFlip(p=0.5),
-                HorizontalFlip(p=0.5),
-                Transpose(p=0.5),
 
                 #RandStainNA(p=1.0),
 
