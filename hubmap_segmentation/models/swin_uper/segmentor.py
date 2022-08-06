@@ -7,9 +7,12 @@ from .decoder import UPerDecoder
 
 
 class SwinUperNet(nn.Module):
-    def __init__(self):
+    def __init__(self, size: str = 'tiny'):
         super(SwinUperNet, self).__init__()
-        self.encoder = SwinTransformerV1()
+        depths = [2, 2, 6, 2]
+        if size == 'small':
+            depths = [2, 2, 18, 2]
+        self.encoder = SwinTransformerV1(depths=depths)
         encoder_dim = [96, 192, 384, 768]
 
         self.decoder = UPerDecoder(
@@ -38,15 +41,15 @@ class SwinUperNet(nn.Module):
         }
 
 
-def create_swin_upernet(load_weights: str = ''):
-    model = SwinUperNet()
+def create_swin_upernet(load_weights: str = '', size: str = 'tiny'):
+    model = SwinUperNet(size=size)
     if load_weights == 'frog':
         import os
         model.encoder.load_state_dict(
             torch.load(
                 os.path.join(
                     os.environ['PRETRAINED'],
-                    'swin_tiny_patch4_window7_224_22k.pth'
+                    'swin_{}_patch4_window7_224_22k.pth'.format(size)
                 ),
                 map_location='cpu'
             )['model'],
