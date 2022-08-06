@@ -35,7 +35,7 @@ def create_masks():
         h = row['img_height']
         w = row['img_width']
 
-        tmp = np.zeros((h * w), dtype=np.uint8)
+        tmp = np.zeros((h * w), dtype=np.float32)
         id = row['id']
         id = str(id)
 
@@ -86,7 +86,7 @@ def create_images():
 
         tmp = Image.open(os.path.join(root, 'train_images', id + '.tiff'))
         if flag:
-            np.save(os.path.join(images_full_ref, id), tmp)
+            np.save(os.path.join(images_full_ref, id), np.array(tmp))
         tmp = tmp.resize(size=(H, H), resample=Image.LANCZOS)
         tmp = np.array(tmp)
 
@@ -94,5 +94,5 @@ def create_images():
 
 
 if __name__ == '__main__':
-    create_masks()
+    #create_masks()
     create_images()

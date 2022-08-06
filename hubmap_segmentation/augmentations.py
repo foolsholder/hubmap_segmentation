@@ -11,7 +11,7 @@ from albumentations import (
     GridDistortion, RandomSizedCrop, RandomCrop, CenterCrop,
     RandomBrightnessContrast, HueSaturationValue, IAASharpen,
     RandomGamma, RandomBrightness, RandomBrightnessContrast,
-    GaussianBlur, CLAHE, RGBShift,
+    GaussianBlur, CLAHE, RGBShift, RandomResizedCrop,
     Cutout, CoarseDropout, GaussNoise, ChannelShuffle, ToGray, OpticalDistortion,
     Normalize, OneOf, NoOp
 )
@@ -28,6 +28,19 @@ def get_simple_augmentations(
     if train:
         return Compose(
             [
+                #Morphology
+                RandomResizedCrop(
+                    height=height,
+                    width=width,
+                    scale=(0.5, 2),
+                    interpolation=cv2.INTER_LANCZOS4,
+                    always_apply=True
+                ),
+                ShiftScaleRotate(shift_limit=0, scale_limit=0.01,
+                                 rotate_limit=(-45,45),
+                                 interpolation=cv2.INTER_LANCZOS4,
+                                 border_mode=0, p=0.5),
+
                 #RandomCrop(height, width, p=1.0),
                 RandomRotate90(p=0.5),
                 VerticalFlip(p=0.5),
@@ -35,9 +48,7 @@ def get_simple_augmentations(
                 Transpose(p=0.5),
 
                 #RandStainNA(p=1.0),
-                #Morphology
-                ShiftScaleRotate(shift_limit=0, scale_limit=(-0.2,0.2), rotate_limit=(-45,45),
-                                 interpolation=1, border_mode=0, p=0.75),
+
                 # NEW
                 OneOf(
                     [
@@ -47,8 +58,12 @@ def get_simple_augmentations(
                     p=0.5
                 ),
                 ChannelShuffle(p=0.5),
-                OpticalDistortion(p=0.5),
-                Affine(p=0.5),
+                OpticalDistortion(p=0.5,
+                                  interpolation=cv2.INTER_LANCZOS4
+                                  ),
+                Affine(p=0.5,
+                       interpolation=cv2.INTER_LANCZOS4
+                       ),
                 #Color
                 OneOf(
                     [
@@ -72,8 +87,12 @@ def get_simple_augmentations(
             ]
         )
     else:
+        # INTER_LANCZOS4
         return Compose(
             [
+                Resize(height=height, width=width,
+                       interpolation=cv2.INTER_LANCZOS4
+                       ),
                 Normalize(),
                 ToTensorV2()
             ]

@@ -73,15 +73,16 @@ class SDataset(Dataset):
         image_id = str(row['id'])
         image = np.load(os.path.join(
             self.root,
-            'resized_images',
-            'images_{}'.format(self.height),
+            'full_images',
+            #'resized_images',
+            #'images_{}'.format(self.height),
             image_id + '.npy'
         ))
-        # image currently in BGR format
         target = np.load(os.path.join(
             self.root,
-            'resized_images',
-            'masks_{}'.format(self.height),
+            'full_masks',
+            #'resized_images',
+            #'masks_{}'.format(self.height),
             image_id + '.npy'
         ))
         aug_dict = self.get_augmented(image=image, mask=target)
