@@ -50,6 +50,13 @@ class SDataset(Dataset):
             'csv_files',
             suffix_csv + '.csv'
         ))
+        self.organ2id = {
+            'kidney': 0,
+            'largeintestine': 1,
+            'lung': 2,
+            'prostate': 3,
+            'spleen': 4
+        }
         if augs is None:
             augs = get_simple_augmentations(train, height=height, width=width)
         self.augs = augs
@@ -80,7 +87,10 @@ class SDataset(Dataset):
         aug_dict = self.get_augmented(image=image, mask=target)
         res = {
             "input_x": aug_dict['image'],
-            "target": aug_dict['mask'][None]
+            "target": aug_dict['mask'][None],
+            'image_id': image_id,
+            'organ': row['organ'],
+            'organ_id': self.organ2id[row['organ']]
         }
         if not self.train:
             full_target = np.load(os.path.join(
@@ -90,8 +100,6 @@ class SDataset(Dataset):
             ))
             res.update({
                 'full_target': torch.Tensor(full_target)[None],
-                'image_id': image_id,
-                'organ': row['organ']
             })
         return res
 

@@ -3,6 +3,7 @@ import torchmetrics
 import wandb
 import pl_bolts
 
+import numpy as np
 import pytorch_lightning as pl
 
 from copy import deepcopy
@@ -82,7 +83,7 @@ class ModelHolder(pl.LightningModule):
 
         stage: str = 'train' if self.segmentor.training else 'valid'
         self._stage = stage
-        preds: Dict[str, torch.Tensor] = self.forward(input_x)
+        preds: Dict[str, torch.Tensor] = self.forward(input_x, additional_info=batch_dict)
 
         for loss_name in self.losses_names:
             loss = self.__getattr__(loss_name)
@@ -133,6 +134,7 @@ class ModelHolder(pl.LightningModule):
     def forward(
             self,
             input_x: torch.Tensor,
+            additional_info: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         preds: Dict[str, torch.Tensor] = self.segmentor(input_x)
         return preds
@@ -140,7 +142,7 @@ class ModelHolder(pl.LightningModule):
     def configure_optimizers(self):
         optim = torch.optim.RAdam(
             self.segmentor.parameters(),
-            lr=1e-4,
+            lr=3e-4,
             weight_decay=1e-3,
             betas=(0.9, 0.999),
             eps=1e-8
@@ -160,7 +162,20 @@ class TTAHolder(ModelHolder):
         super(TTAHolder, self).__init__(*args, **kwargs)
         self._stages_names = ['valid']
 
-    def forward(self, input_x: torch.Tensor) -> Dict[str, Any]:
+    def _forward(
+            self,
+            input_x: torch.Tensor,
+            additional_info: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        preds = self.segmentor(input_x)
+        preds.pop('logits')
+        return preds
+
+    def forward(
+            self,
+            input_x: torch.Tensor,
+            additional_info: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """
         only 'probs' is matter
         """
@@ -187,8 +202,7 @@ class TTAHolder(ModelHolder):
             batch_input += [input_y]
 
         batch_input = torch.cat(batch_input, dim=0)
-        preds = self.segmentor(batch_input)
-        preds.pop('logits')
+        preds = self._forward(batch_input, additional_info)
 
         idx_preds = 1
         for type_aug, args_aug in idx_tta:
@@ -217,26 +231,51 @@ def _clear_segmentor_prefix(state_dict: Dict[str, Any]) -> Dict[str, Any]:
 
 
 class EnsembleHolder(TTAHolder):
-    def __init__(self, ckpt_path_list: List[str], *args, **kwargs):
+    def __init__(
+            self,
+            ckpt_path_list: List[str],
+            weights: Optional["Matrix"] = None,
+            *args,
+            **kwargs
+    ):
         super(EnsembleHolder, self).__init__(*args, **kwargs)
         self._stages_names = ['valid']
         self.state_dicts = []
+        if weights is None:
+            self._weights = None
+        else:
+            self._weights = np.array(weights, dtype=np.float32)
         for path in ckpt_path_list:
             state_dict = torch.load(path, map_location='cpu')
             state_dict = state_dict['state_dict']
             state_dict = _clear_segmentor_prefix(state_dict)
             self.state_dicts += [state_dict]
 
-    def forward(self, input_x: torch.Tensor) -> Dict[str, Any]:
+    def _forward(
+            self,
+            input_x: torch.Tensor,
+            additional_info: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         probs = []
+        if additional_info is not None:
+            # batch_size == 1 or same augmented organ
+            organ_id = additional_info['organ_id'][0].item()
+        else:
+            organ_id = -1
 
-        for st in self.state_dicts:
+        if self._weights is None:
+            w = np.ones(len(self.state_dicts), dtype=np.float32) / len(self.state_dicts)
+        else:
+            w = self._weights[:, organ_id]
+        w_sum = np.sum(w)
+
+        for idx, st in enumerate(self.state_dicts):
             self.segmentor.load_state_dict(st)
-            preds_tmp = super(EnsembleHolder, self).forward(input_x)
-            probs += [preds_tmp['probs']]
+            preds_tmp = super(EnsembleHolder, self)._forward(input_x, additional_info=additional_info)
+            probs += [preds_tmp['probs'] * w[idx]]
 
         probs = torch.cat(probs, dim=0)
-        probs = torch.mean(probs, dim=0, keepdim=True)
+        probs = torch.sum(probs, dim=0, keepdim=True) / w_sum
         preds = {
             'probs': probs
         }

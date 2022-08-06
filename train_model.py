@@ -26,7 +26,7 @@ if 'seed' in config.keys():
 model_holder = ModelHolder(config)
 wandb_logger = WandbLogger(**config['wandb_cfg'])
 trainer = pl.Trainer(
-    max_epochs=150,
+    max_epochs=300,
     strategy='ddp',
     gpus=4,
     num_nodes=1,

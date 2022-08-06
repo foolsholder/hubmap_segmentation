@@ -5,7 +5,7 @@
   },
   "wandb_cfg": {
     "project": "hubmap",
-    "name": "fbce+sdice_tom_kidney_radam_512_T4_F2"
+    "name": "fbce+sdice_tom_kidney_radam_512_T4_F2_SA"
   },
   "train_loader": {
     "train": true,

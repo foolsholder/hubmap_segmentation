@@ -11,7 +11,7 @@ from albumentations import (
     GridDistortion, RandomSizedCrop, RandomCrop, CenterCrop,
     RandomBrightnessContrast, HueSaturationValue, IAASharpen,
     RandomGamma, RandomBrightness, RandomBrightnessContrast,
-    GaussianBlur, CLAHE,
+    GaussianBlur, CLAHE, IAAAffine, RGBShift,
     Cutout, CoarseDropout, GaussNoise, ChannelShuffle, ToGray, OpticalDistortion,
     Normalize, OneOf, NoOp
 )
@@ -38,10 +38,21 @@ def get_simple_augmentations(
                 #Morphology
                 ShiftScaleRotate(shift_limit=0, scale_limit=(-0.2,0.2), rotate_limit=(-45,45),
                                  interpolation=1, border_mode=0, p=0.75),
+                # NEW
                 GaussianBlur(blur_limit=(3,5), p=0.5),
+                OneOf([
+                        GaussNoise(var_limit=20, p=0.5),
+                        RGBShift(p=0.5)
+                    ],
+                    p=0.5
+                ),
+                ChannelShuffle(p=0.5),
+                OpticalDistortion(p=0.5),
+                IAAAffine(p=0.5),
                 #Color
                 OneOf(
                     [
+                        CLAHE(p=0.5), #NEW
                         RandomGamma(p=0.5),
                         RandomBrightnessContrast(brightness_limit=0.35, contrast_limit=0.5,
                                                  brightness_by_max=True,p=0.5),

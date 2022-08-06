@@ -5,7 +5,7 @@
   },
   "wandb_cfg": {
     "project": "hubmap",
-    "name": "fbce+sdice_tom_imagenet_radam_512_T4_F1"
+    "name": "fbce+sdice_tom_imagenet_radam_512_T4_F1_SA"
   },
   "train_loader": {
     "train": true,
