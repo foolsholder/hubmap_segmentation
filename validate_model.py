@@ -76,7 +76,16 @@ model_holder = EnsembleHolder(
             'epoch.ckpt'
         ),
     ],
-    weights=weights
+    weights=weights,
+    tta_list=[
+        ('flip', [-1]),
+        ('flip', [-2]),
+        ('flip', [-1, -2]),
+        ('transpose', None),
+        ('rotate90', 1),
+        ('rotate90', 2),
+        ('rotate90', 3),
+    ]
 )
 
 trainer = pl.Trainer(

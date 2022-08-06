@@ -7,11 +7,11 @@ from albumentations import (
     Compose, Transpose,
     HorizontalFlip,
     VerticalFlip, Rotate, RandomRotate90,
-    ShiftScaleRotate, ElasticTransform,
+    ShiftScaleRotate, ElasticTransform, Affine,
     GridDistortion, RandomSizedCrop, RandomCrop, CenterCrop,
     RandomBrightnessContrast, HueSaturationValue, IAASharpen,
     RandomGamma, RandomBrightness, RandomBrightnessContrast,
-    GaussianBlur, CLAHE, IAAAffine, RGBShift,
+    GaussianBlur, CLAHE, RGBShift,
     Cutout, CoarseDropout, GaussNoise, ChannelShuffle, ToGray, OpticalDistortion,
     Normalize, OneOf, NoOp
 )
@@ -39,25 +39,26 @@ def get_simple_augmentations(
                 ShiftScaleRotate(shift_limit=0, scale_limit=(-0.2,0.2), rotate_limit=(-45,45),
                                  interpolation=1, border_mode=0, p=0.75),
                 # NEW
-                GaussianBlur(blur_limit=(3,5), p=0.5),
-                OneOf([
-                        GaussNoise(var_limit=20, p=0.5),
-                        RGBShift(p=0.5)
+                OneOf(
+                    [
+                        GaussianBlur(blur_limit=(3,5), p=0.5),
+                        GaussNoise(var_limit=(25, 30), p=0.5)
                     ],
                     p=0.5
                 ),
                 ChannelShuffle(p=0.5),
                 OpticalDistortion(p=0.5),
-                IAAAffine(p=0.5),
+                Affine(p=0.5),
                 #Color
                 OneOf(
                     [
                         CLAHE(p=0.5), #NEW
+                        RGBShift(p=0.5),
                         RandomGamma(p=0.5),
                         RandomBrightnessContrast(brightness_limit=0.35, contrast_limit=0.5,
                                                  brightness_by_max=True,p=0.5),
                         HueSaturationValue(hue_shift_limit=30, sat_shift_limit=30,
-                                           val_shift_limit=0, p=0.5),
+                                           val_shift_limit=20, p=0.5),
                     ],
                     p=0.875
                 ),

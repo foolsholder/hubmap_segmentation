@@ -158,9 +158,15 @@ class ModelHolder(pl.LightningModule):
 
 
 class TTAHolder(ModelHolder):
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            tta_list: List[Tuple[str, Any]],
+            *args,
+            **kwargs
+    ):
         super(TTAHolder, self).__init__(*args, **kwargs)
         self._stages_names = ['valid']
+        self.idx_tta = tta_list
 
     def _forward(
             self,
@@ -179,15 +185,7 @@ class TTAHolder(ModelHolder):
         """
         only 'probs' is matter
         """
-        idx_tta = [
-            ('flip', [-1]),
-            ('flip', [-2]),
-            ('flip', [-1, -2]),
-            ('transpose', None),
-            ('rotate90', 1),
-            ('rotate90', 2),
-            ('rotate90', 3),
-        ]
+        idx_tta = self.idx_tta
         batch_input = [input_x]
 
         #preds['full_probs'] = F.interpolate(preds['probs'], size=self._shape, mode='bicubic')
@@ -272,10 +270,10 @@ class EnsembleHolder(TTAHolder):
         for idx, st in enumerate(self.state_dicts):
             self.segmentor.load_state_dict(st)
             preds_tmp = super(EnsembleHolder, self)._forward(input_x, additional_info=additional_info)
-            probs += [preds_tmp['probs'] * w[idx]]
-
+            tensor = preds_tmp['probs'] * w[idx]
+            probs += [tensor[None]]
         probs = torch.cat(probs, dim=0)
-        probs = torch.sum(probs, dim=0, keepdim=True) / w_sum
+        probs = torch.sum(probs, dim=0, keepdim=False) / w_sum
         preds = {
             'probs': probs
         }
