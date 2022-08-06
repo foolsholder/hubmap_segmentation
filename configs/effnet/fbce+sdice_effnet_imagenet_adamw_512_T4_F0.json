@@ -1,7 +1,7 @@
 {
   "model_cfg": {
-    "type": "tom",
-    "load_weights": "kidney_0"
+    "type": "effnet",
+    "load_weights": "imagenet"
   },
   "max_epochs": 300,
   "opt_sched": {
@@ -11,22 +11,15 @@
       "weight_decay": 1e-3,
       "betas": [0.9, 0.999],
       "eps": 1e-8
-    },
-    "sched": {
-      "type": "LinearWarmupCosineAnnealingLR",
-      "warmup_epochs": 25,
-      "warmup_start_lr": 1e-6,
-      "eta_min": 1e-6,
-      "max_epochs": 25
     }
   },
   "wandb_cfg": {
-    "project": "hubmap_experimental",
-    "name": "fbce+sdice_tom_kidney_radam_512_T4_F0_SA"
+    "project": "hubmap",
+    "name": "fbce+sdice_effnet_imagenet_adamw_512_T4_F0_SA"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 4,
+    "batch_size": 8,
     "num_workers": 8,
     "height": 512,
     "width": 512,
@@ -47,5 +40,10 @@
         "sigmoid_soft_dice"
     ]
   },
-  "seed": 3496295
+  "seed": 3496295,
+  "strategy": "ddp",
+  "gpus": 2,
+  "num_nodes": 1,
+  "log_every_n_steps": 1,
+  "gradient_clip_val": 1.0
 }

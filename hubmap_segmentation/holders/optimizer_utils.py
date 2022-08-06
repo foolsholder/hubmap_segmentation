@@ -22,5 +22,8 @@ def create_obj(cfg, available, **kwargs):
 
 def create_opt_shed(opt_sched_config, params):
     optim = create_obj(opt_sched_config['opt'], available_optimizers, params=params)
-    scheduler = create_obj(opt_sched_config['sched'], available_schedulers, optimizer=optim)
-    return [optim], [scheduler]
+    res = (optim,)
+    if 'sched' in opt_sched_config:
+        scheduler = create_obj(opt_sched_config['sched'], available_schedulers, optimizer=optim)
+        res += (scheduler,)
+    return res

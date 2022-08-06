@@ -5,6 +5,7 @@ import argparse
 import torch
 import numpy as np
 
+from collections import OrderedDict
 from typing import Dict, Union
 from hubmap_segmentation.holders.holder import ModelHolder
 from hubmap_segmentation.sdataset import create_loader_from_cfg
@@ -15,7 +16,7 @@ parser = argparse.ArgumentParser(description='Get config')
 parser.add_argument('--config_path', type=str, required=True, default='')
 args = parser.parse_args()
 
-config: Dict[str, Union[Dict, str, int]] = json.load(open(args.config_path, 'r'))
+config: Dict[str, Union[Dict, str, int]] = json.load(open(args.config_path, 'r'), object_pairs_hook=OrderedDict)
 max_epochs: int = config['max_epochs']
 if 'seed' in config.keys():
     if config['seed']:
@@ -26,11 +27,11 @@ model_holder = ModelHolder(config)
 wandb_logger = WandbLogger(**config['wandb_cfg'])
 trainer = pl.Trainer(
     max_epochs=max_epochs,
-    strategy='ddp',
-    gpus=4,
-    num_nodes=1,
-    log_every_n_steps=1,
-    gradient_clip_val=1.0,
+    strategy=config['strategy'],
+    gpus=config['gpus'],
+    num_nodes=config['num_nodes'],
+    log_every_n_steps=config['log_every_n_steps'],
+    gradient_clip_val=config['gradient_clip_val'],
     callbacks=[
         pl.callbacks.LearningRateMonitor(logging_interval='step'),
         pl.callbacks.ModelCheckpoint(
