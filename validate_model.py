@@ -3,13 +3,20 @@ import os
 
 from hubmap_segmentation.holders import EnsembleHolder
 from hubmap_segmentation.sdataset import create_loader
+from hubmap_segmentation.callbacks import MyPrintingCallback
+from pytorch_lightning.loggers import WandbLogger
 
 config = {
     'model_cfg': {
         'type': 'swin',
         'size': 'small',
         'load_weights': ''
-    }
+    },
+    'log': False,
+    "wandb_cfg": {
+        "project": "hubmap_test",
+        "name": "fbce+sdice_swinS_frog_adamw_512_T2_F0_SA"
+    },
 }
 
 if False:
@@ -33,20 +40,21 @@ model_holder = EnsembleHolder(
     ],
     weights=weights,
     tta_list=[
-        ('flip', [-1]),
-        ('flip', [-2]),
-        ('flip', [-1, -2]),
-        ('transpose', None),
-        ('rotate90', 1),
-        ('rotate90', 2),
-        ('rotate90', 3),
     ]
 )
-
-trainer = pl.Trainer(
-    accelerator='gpu',
-    log_every_n_steps=1,
-)
+if config['log']:
+    wandb_logger = WandbLogger(**config['wandb_cfg'])
+    trainer = pl.Trainer(
+        accelerator='gpu',
+        log_every_n_steps=1,
+        callbacks=[MyPrintingCallback()],
+        logger=wandb_logger
+    )
+else:
+    trainer = pl.Trainer(
+        accelerator='gpu',
+        log_every_n_steps=1,
+    )
 
 trainer.validate(
     model=model_holder,

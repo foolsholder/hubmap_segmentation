@@ -5,3 +5,4 @@ import hubmap_segmentation.augmentations
 import hubmap_segmentation.holders
 import hubmap_segmentation.holders.holder
 import hubmap_segmentation.sdataset
+import hubmap_segmentation.callbacks
