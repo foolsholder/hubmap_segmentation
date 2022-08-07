@@ -20,6 +20,16 @@ from typing import Union, Dict, Any, Optional
 from .extra_augs import RandStainNA
 
 
+def get_test_augmentations() -> Compose:
+    return Compose(
+        [
+            Normalize(),
+            ToTensorV2()
+        ]
+    )
+
+# 1024 - 1024
+
 def get_simple_augmentations(
         train: bool = True,
         height: int = 512,
@@ -28,13 +38,12 @@ def get_simple_augmentations(
     if train:
         return Compose(
             [
-
                 #RandomCrop(height, width, p=1.0),
                 #Morphology
                 RandomResizedCrop(
                     height=height,
                     width=width,
-                    scale=(0.5, 2),
+                    scale=(0.4, 0.6),
                     interpolation=cv2.INTER_LANCZOS4,
                     always_apply=True
                 ),
@@ -60,12 +69,14 @@ def get_simple_augmentations(
                     p=0.5
                 ),
                 ChannelShuffle(p=0.5),
-                OpticalDistortion(p=0.5,
-                                  interpolation=cv2.INTER_LANCZOS4
-                                  ),
-                Affine(p=0.5,
-                       interpolation=cv2.INTER_LANCZOS4
-                       ),
+                OpticalDistortion(
+                    p=0.5,
+                    interpolation=cv2.INTER_LANCZOS4
+                ),
+                Affine(
+                    p=0.5,
+                    interpolation=cv2.INTER_LANCZOS4
+                ),
                 #Color
                 OneOf(
                     [
@@ -92,9 +103,6 @@ def get_simple_augmentations(
         # INTER_LANCZOS4
         return Compose(
             [
-                Resize(height=height, width=width,
-                       interpolation=cv2.INTER_LANCZOS4
-                       ),
                 Normalize(),
                 ToTensorV2()
             ]

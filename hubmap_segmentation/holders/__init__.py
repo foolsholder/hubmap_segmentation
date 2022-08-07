@@ -1,4 +1,5 @@
-from .holder import ModelHolder, TTAHolder, EnsembleHolder
+from .holder import ModelHolder
+from .validate_holders import TTAHolder, EnsembleHolder
 
 __all__ = [
     "ModelHolder",

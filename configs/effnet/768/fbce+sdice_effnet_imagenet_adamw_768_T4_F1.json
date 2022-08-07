@@ -1,8 +1,7 @@
 {
   "model_cfg": {
-    "type": "swin",
-    "size": "tiny",
-    "load_weights": "frog"
+    "type": "effnet",
+    "load_weights": "imagenet"
   },
   "max_epochs": 300,
   "opt_sched": {
@@ -16,23 +15,23 @@
   },
   "wandb_cfg": {
     "project": "hubmap",
-    "name": "fbce+sdice_swinT_frog_adamw_512_T4_F0_SA"
+    "name": "fbce+sdice_effnet_imagenet_adamw_768_T4_F1_SA"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 8,
+    "batch_size": 4,
     "num_workers": 8,
-    "height": 512,
-    "width": 512,
-    "fold": 0
+    "height": 768,
+    "width": 768,
+    "fold": 1
   },
   "valid_loader": {
     "train": false,
     "batch_size": 1,
     "num_workers": 4,
-    "height": 512,
-    "width": 512,
-    "fold": 0
+    "height": 768,
+    "width": 768,
+    "fold": 1
   },
   "losses": {
     "weights": [1.0, 1.0],
@@ -43,7 +42,7 @@
   },
   "seed": 3496295,
   "strategy": "ddp",
-  "gpus": 2,
+  "gpus": 4,
   "num_nodes": 1,
   "log_every_n_steps": 1,
   "gradient_clip_val": 1.0

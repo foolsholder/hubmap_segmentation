@@ -7,7 +7,7 @@ import numpy as np
 
 from collections import OrderedDict
 from typing import Dict, Union
-from hubmap_segmentation.holders.holder import ModelHolder
+from hubmap_segmentation.holders import ModelHolder
 from hubmap_segmentation.sdataset import create_loader_from_cfg
 from pytorch_lightning.loggers import WandbLogger
 

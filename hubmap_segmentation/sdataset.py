@@ -16,7 +16,7 @@ from albumentations import (
 )
 from albumentations.pytorch import ToTensorV2
 from typing import Union, Dict, Any, Optional
-from .augmentations import get_simple_augmentations
+from .augmentations import get_simple_augmentations, get_test_augmentations
 
 
 class SDataset(Dataset):
@@ -38,18 +38,31 @@ class SDataset(Dataset):
         self.train = train
         self.data_folder: str = root
         self.root = root
+        if train:
+            self.folder_images = 'tiled_images/images_{}'.format(height * 2)
+            self.folder_masks = 'tiled_images/masks_{}'.format(height * 2)
+        elif not test:
+            self.folder_images = 'tiled_images/images_{}'.format(height)
+            self.folder_masks = 'tiled_images/masks_{}'.format(height)
+        else:
+            self.folder_images = 'full_images'
+            self.folder_masks = 'full_masks'
 
-        suffix_csv = 'train' if train else 'valid'
+        suffix_csv = 'tiled_train' if train else 'tiled_valid'
         if test or fold is None:
+            test = True
             suffix_csv = 'test'
         else:
             suffix_csv += '_' + str(fold)
 
+        self.test = test
+        self.test_aug = get_test_augmentations()
         self.df = pd.read_csv(os.path.join(
             root,
             'csv_files',
             suffix_csv + '.csv'
         ))
+        #self.df = self.df[self.df.organ != 'kidney']
         self.organ2id = {
             'kidney': 0,
             'largeintestine': 1,
@@ -62,7 +75,7 @@ class SDataset(Dataset):
         self.augs = augs
 
     def __len__(self) -> int:
-        return len(self.df)# * (10 if self.train else 1)
+        return len(self.df)
 
     def __getitem__(
             self,
@@ -73,16 +86,12 @@ class SDataset(Dataset):
         image_id = str(row['id'])
         image = np.load(os.path.join(
             self.root,
-            'full_images',
-            #'resized_images',
-            #'images_{}'.format(self.height),
+            self.folder_images,
             image_id + '.npy'
         ))
         target = np.load(os.path.join(
             self.root,
-            'full_masks',
-            #'resized_images',
-            #'masks_{}'.format(self.height),
+            self.folder_masks,
             image_id + '.npy'
         ))
         aug_dict = self.get_augmented(image=image, mask=target)
@@ -94,13 +103,12 @@ class SDataset(Dataset):
             'organ_id': self.organ2id[row['organ']]
         }
         if not self.train:
-            full_target = np.load(os.path.join(
-                self.root,
-                'full_masks',
-                image_id + '.npy'
-            ))
             res.update({
-                'full_target': torch.Tensor(full_target)[None],
+                'full_target': torch.Tensor(target)[None],
+            })
+        if self.test:
+            res.update({
+                'full_image': self.test_aug(image=image)['image'],
             })
         return res
 
