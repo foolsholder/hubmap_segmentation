@@ -2,9 +2,10 @@
   "model_cfg": {
     "type": "swin",
     "size": "small",
+    "use_aux_head": true,
     "load_weights": "frog"
   },
-  "max_epochs": 100,
+  "max_epochs": 300,
   "opt_sched": {
     "opt": {
       "type": "AdamW",
@@ -17,7 +18,7 @@
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "tiled_fbce+sdice_swinS_frog_adamw_512_V4_F3_SA"
+    "name": "fbce+sdice_swinS_frog_adamw_512_T2_F0_SA"
   },
   "train_loader": {
     "train": true,
@@ -25,7 +26,7 @@
     "num_workers": 8,
     "height": 512,
     "width": 512,
-    "fold": 3
+    "fold": 0
   },
   "valid_loader": {
     "train": false,
@@ -33,18 +34,19 @@
     "num_workers": 4,
     "height": 512,
     "width": 512,
-    "fold": 3
+    "fold": 0
   },
   "losses": {
     "weights": [1.0, 1.0],
     "names": [
-        "binary_focal_loss",
+        "bce",
         "sigmoid_soft_dice"
-    ]
+    ],
+    "aux": 0.4
   },
   "seed": 3496295,
   "strategy": "ddp",
-  "gpus": 2,
+  "gpus": 4,
   "num_nodes": 1,
   "log_every_n_steps": 1,
   "gradient_clip_val": 1.0
