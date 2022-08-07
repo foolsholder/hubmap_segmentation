@@ -33,6 +33,7 @@ class MyPrintingCallback(Callback):
         mult = torch.sum(mult, dim=1)
         denom = torch.sum(probs, dim=1) + torch.sum(target, dim=1)
         dice = (2 * mult + 1e-7) / (denom + 1e-7)
+        del target, probs, mult, denom
         mask = mask.squeeze(0).squeeze(0).cpu().numpy()
         predicted_mask = (predicted_mask >= 0.5).squeeze(0).squeeze(0).cpu().numpy()
         print(mask.shape, predicted_mask.shape)
