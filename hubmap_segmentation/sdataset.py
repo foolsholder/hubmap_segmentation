@@ -40,17 +40,11 @@ class SDataset(Dataset):
         self.train = train
         self.data_folder: str = root
         self.root = root
-        if train:
-            self.folder_images = 'tiled_images/images_{}'.format(height * 2)
-            self.folder_masks = 'tiled_images/masks_{}'.format(height * 2)
-        elif not test:
-            self.folder_images = 'tiled_images/images_{}'.format(height)
-            self.folder_masks = 'tiled_images/masks_{}'.format(height)
-        else:
-            self.folder_images = 'full_images'
-            self.folder_masks = 'full_masks'
 
-        suffix_csv = 'tiled_train' if train else 'tiled_valid'
+        self.folder_images = 'full_images'
+        self.folder_masks = 'full_masks'
+
+        suffix_csv = 'train' if train else 'valid'
         if test or fold is None:
             test = True
             suffix_csv = 'test'
@@ -77,7 +71,7 @@ class SDataset(Dataset):
         self.augs = augs
 
     def __len__(self) -> int:
-        return len(self.df)
+        return len(self.df) * (10 if self.train else 1)
 
     def __getitem__(
             self,
@@ -108,10 +102,6 @@ class SDataset(Dataset):
             res.update({
                 'full_target': torch.Tensor(target)[None],
             })
-        if self.test:
-            res.update({
-                'full_image': self.test_aug(image=image)['image'],
-            })
         return res
 
     def get_augmented(
@@ -120,10 +110,10 @@ class SDataset(Dataset):
             mask: np.array
     ) -> Dict[str, Union[np.array, torch.Tensor]]:
         aug = self.augs(image=image, mask=mask)
-        while aug['mask'].sum() < 1.0:
-            aug = self.augs(image=image, mask=mask)
-            if np.random.rand() < self.prob_miss:
-                break
+        #while aug['mask'].sum() < 1.0:
+        #    aug = self.augs(image=image, mask=mask)
+        #    if np.random.rand() < self.prob_miss:
+        #        break
         return aug
 
 

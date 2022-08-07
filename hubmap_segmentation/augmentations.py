@@ -43,7 +43,7 @@ def get_simple_augmentations(
                 RandomResizedCrop(
                     height=height,
                     width=width,
-                    scale=(0.4, 0.6),
+                    scale=(0.75, 1.25),
                     interpolation=cv2.INTER_LANCZOS4,
                     always_apply=True
                 ),
@@ -103,6 +103,11 @@ def get_simple_augmentations(
         # INTER_LANCZOS4
         return Compose(
             [
+                Resize(
+                    height=height,
+                    width=width,
+                    interpolation=cv2.INTER_LANCZOS4
+                ),
                 Normalize(),
                 ToTensorV2()
             ]

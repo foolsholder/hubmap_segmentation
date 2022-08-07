@@ -34,8 +34,8 @@ model_holder = EnsembleHolder(
     ckpt_path_list=[
         os.path.join(
             os.environ['SHUBMAP_EXPS'],
-            'fbce+sdice_swinS_frog_adamw_512_T2_F0_SA',
-            'epoch.ckpt'
+            'tiled_fbce+sdice_swinS_frog_adamw_512_V4_F0_SA',
+            'swinS_tiled_epoch_f0.ckpt'
         )
     ],
     weights=weights,

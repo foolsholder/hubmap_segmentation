@@ -2,22 +2,31 @@
   "model_cfg": {
     "type": "swin",
     "size": "small",
+    "use_aux_head": true,
     "load_weights": "frog"
   },
-  "max_epochs": 100,
+  "max_epochs": 300,
   "opt_sched": {
     "opt": {
       "type": "AdamW",
-      "lr": 1e-4,
+      "lr": 3e-4,
       "weight_decay": 1e-3,
       "betas": [0.9, 0.999],
       "eps": 1e-8
+    },
+    "sched": {
+      "type": "LinearWarmupCosineAnnealingLR",
+      "warmup_epochs": 1500,
+      "max_epochs": -1,
+      "warmup_start_lr": 1e-8,
+      "eta_min": 3e-4,
+      "interval": "step"
     }
   },
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "tiled_fbce+sdice_swinS_frog_adamw_512_V4_F0_SA"
+    "name": "fbce+sdice_swinS_frog_adamw_512_V4_F0_SA"
   },
   "train_loader": {
     "train": true,
@@ -29,7 +38,7 @@
   },
   "valid_loader": {
     "train": false,
-    "batch_size": 16,
+    "batch_size": 1,
     "num_workers": 4,
     "height": 512,
     "width": 512,
@@ -38,9 +47,10 @@
   "losses": {
     "weights": [1.0, 1.0],
     "names": [
-        "binary_focal_loss",
+        "bce",
         "sigmoid_soft_dice"
-    ]
+    ],
+    "aux": 0.4
   },
   "seed": 3496295,
   "strategy": "ddp",

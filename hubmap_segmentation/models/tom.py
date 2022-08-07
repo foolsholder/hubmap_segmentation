@@ -87,32 +87,47 @@ class CenterBlock(nn.Module):
     def __init__(self, in_channel, out_channel):
         super().__init__()
         self.conv = conv3x3(in_channel, out_channel).apply(init_weight)
+        self.bn = nn.BatchNorm2d(out_channel)
 
     def forward(self, inputs):
         x = self.conv(inputs)
+        x = self.bn(x)
+        x = F.relu(x, inplace=True)
         return x
 
 
 class DecodeBlock(nn.Module):
     def __init__(self, in_channel, out_channel, upsample):
         super().__init__()
-        self.bn1 = nn.BatchNorm2d(in_channel).apply(init_weight)
         self.upsample = nn.Sequential()
         if upsample:
-            self.upsample.add_module('upsample',nn.Upsample(scale_factor=2, mode='nearest'))
+            self.upsample.add_module('upsample',nn.Upsample(scale_factor=2, mode='bilinear'))
         self.conv3x3_1 = conv3x3(in_channel, in_channel).apply(init_weight)
-        self.bn2 = nn.BatchNorm2d(in_channel).apply(init_weight)
+        self.bn1 = nn.BatchNorm2d(in_channel).apply(init_weight)
+
         self.conv3x3_2 = conv3x3(in_channel, out_channel).apply(init_weight)
+        self.bn2 = nn.BatchNorm2d(out_channel).apply(init_weight)
+
         self.cbam = CBAM(out_channel, reduction=16)
         self.conv1x1   = conv1x1(in_channel, out_channel).apply(init_weight)
+        self.bn_out = nn.BatchNorm2d(out_channel)
 
     def forward(self, inputs):
-        x  = F.relu(self.bn1(inputs))
-        x  = self.upsample(x)
-        x  = self.conv3x3_1(x)
-        x  = self.conv3x3_2(F.relu(self.bn2(x)))
+        # conv -> bn -> act
+        skip_connection = self.upsample(inputs)
+
+        #x  = F.relu(self.bn1(inputs))
+        x  = skip_connection
+
+        x  = F.relu(self.bn1(self.conv3x3_1(x)), inplace=True)
+
+        x  = self.bn2(self.conv3x3_2(x))
+
         x  = self.cbam(x)
-        x += self.conv1x1(self.upsample(inputs)) #shortcut
+
+        x += self.conv1x1(skip_connection) #shortcut
+        x = F.relu(self.bn_out(x), inplace=True)
+
         return x
 
 
