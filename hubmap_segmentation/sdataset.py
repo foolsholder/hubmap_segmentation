@@ -28,9 +28,11 @@ class SDataset(Dataset):
             augs: Optional[Compose] = None,
             height: int = 512,
             width: int = 512,
-            fold: Optional[int] = None
+            fold: Optional[int] = None,
+            prob_miss: float = 0.05
     ):
         super(SDataset, self).__init__()
+        self.prob_miss = prob_miss
         if root == '':
             root = os.environ['SDATASET_PATH']
         self.height = height
@@ -120,6 +122,8 @@ class SDataset(Dataset):
         aug = self.augs(image=image, mask=mask)
         while aug['mask'].sum() < 1.0:
             aug = self.augs(image=image, mask=mask)
+            if np.random.rand() < self.prob_miss:
+                break
         return aug
 
 

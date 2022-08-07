@@ -16,6 +16,7 @@
   },
   "wandb_cfg": {
     "project": "hubmap",
+    "entity": "dreamtigers",
     "name": "tiled_fbce+sdice_swinS_frog_adamw_512_V4_F2_SA"
   },
   "train_loader": {
