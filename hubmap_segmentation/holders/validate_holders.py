@@ -9,19 +9,7 @@ from typing import Dict, List, Union, Tuple, Optional, Any
 from .holder import ModelHolder
 
 
-class TilingHolder(ModelHolder):
-    def __init__(
-            self,
-            tiling: bool = False,
-            tiling_h: int = 512,
-            tiling_w: int = 512,
-            *args,
-            **kwargs
-    ):
-        super(TilingHolder, self).__init__(*args, **kwargs)
-        self.tiling = tiling
-        self.tiling_shape = (tiling_h, tiling_w)
-
+class InfereceHolder(ModelHolder):
     def _forward_impl(
             self,
             input_x: torch.Tensor,
@@ -38,64 +26,15 @@ class TilingHolder(ModelHolder):
     ) -> Dict[str, Any]:
         return self._forward_impl(input_x, additional_info)
 
-    def tiling_forward(
-            self,
-            input_x: torch.Tensor,
-            additional_info: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        # only test time
-        if 'full_image' in additional_info:
-            input_x = additional_info['full_image']
-        (th, tw) = self.tiling_shape
-
-        padding_params = (tw // 8, tw // 8, th // 8, th // 8)
-        input_x = F.pad(input_x, padding_params, mode='constant', value=0)
-        h, w = input_x.shape[2:]
-
-        shift_h = th - th // 4
-        shift_w = tw - tw // 4
-
-        weight = torch.zeros((h, w)).to(input_x.device)
-        probs = torch.zeros((h, w)).to(input_x.device)
-
-        h_cnt = (h - 1) // shift_h + 1
-        w_cnt = (w - 1) // shift_w + 1
-
-        shift_h = (h - 1) // h_cnt + 1
-        shift_w = (w - 1) // w_cnt + 1
-
-        for h_idx in range(h_cnt):
-            h_right = min(h, shift_h * h_idx + th)
-            h_left = h_right - th
-            for w_idx in range(w_cnt):
-                w_right = min(w, shift_w * w_idx + tw)
-                w_left = w_right - tw
-
-                mask = torch.zeros((th, tw)).to(input_x.device)
-                mask[th//8:-th//8, tw//8:-tw//8] = 1.
-
-                weight[h_left:h_right, w_left:w_right] += mask
-                input_window = input_x[:, :, h_left:h_right, w_left:w_right]
-                preds = self._forward(input_window, additional_info)
-                window_probs = preds['probs'][0, 0]
-                probs[h_left:h_right, w_left:w_right] += window_probs * mask
-        probs = probs[th//8:-th//8, tw//8:-tw//8]
-        weight = weight[th//8:-th//8, tw//8:-tw//8]
-        return {
-            "probs": (probs / weight)[None, None]
-        }
-
     def forward(
             self,
             input_x: torch.Tensor,
             additional_info: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        if not self.tiling:
-            return self._forward(input_x, additional_info)
-        return self.tiling_forward(input_x, additional_info)
+        return self._forward(input_x, additional_info)
 
 
-class TTAHolder(TilingHolder):
+class TTAHolder(InfereceHolder):
     def __init__(
             self,
             tta_list: List[Tuple[str, Any]],

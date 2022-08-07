@@ -5,88 +5,92 @@ from torch.nn import functional as F
 
 from .modules import conv3x3_bn_relu
 from typing import List, Union, Tuple
+from ..tom import DecodeBlock, CenterBlock
 
 
 class UPerDecoder(nn.Module):
     def __init__(self,
-        in_dim,
-        ppm_pool_scale,
-        ppm_dim,
-        fpn_out_dim
+        in_dim: List[int], # len(in_dim) == 4
+        decoder_out_channels: List[int],
+        center_channels: int,
+        last_channels: int
     ):
         super(UPerDecoder, self).__init__()
+        # H // 4, W // 4 -> 512 // 4 = 128
+        # H // 8, W // 8
+        # H // 16, W // 16
+        # H // 32, W // 32 -> 512 // 32 = 16
+        #
+        # 16 -> 32 -> 64 -> 128
+        # f_1(16x16) - 32x32
+        # cat 32x32
+        # f_2(32x32) - 64x64
+        # cat 64x64
+        # f_3(64x64) - 128x128
+        # cat 128x128
+        # f_4(128x128) - 256x256
+        # g(256x256) -> 512x512
 
-        # PPM ----
-        dim = in_dim[-1]
-        ppm_pooling = []
-        ppm_conv = []
-
-        for scale in ppm_pool_scale:
-            ppm_pooling.append(
-                nn.AdaptiveAvgPool2d(scale)
-            )
-            ppm_conv.append(
-                nn.Sequential(
-                    nn.Conv2d(dim, ppm_dim, kernel_size=1, bias=False),
-                    nn.BatchNorm2d(ppm_dim),
-                    nn.ReLU(inplace=True)
-                )
-            )
-        self.ppm_pooling = nn.ModuleList(ppm_pooling)
-        self.ppm_conv = nn.ModuleList(ppm_conv)
-        self.ppm_out = conv3x3_bn_relu(dim + len(ppm_pool_scale)*ppm_dim, fpn_out_dim, 1)
-
-        # FPN ----
-        fpn_in = []
-        for i in range(0, len(in_dim)-1):  # skip the top layer
-            fpn_in.append(
-                nn.Sequential(
-                    nn.Conv2d(in_dim[i], fpn_out_dim, kernel_size=1, bias=False),
-                    nn.BatchNorm2d(fpn_out_dim),
-                    nn.ReLU(inplace=True)
-                )
-            )
-        self.fpn_in = nn.ModuleList(fpn_in)
-
-        fpn_out = []
-        for i in range(len(in_dim) - 1):  # skip the top layer
-            fpn_out.append(
-                conv3x3_bn_relu(fpn_out_dim, fpn_out_dim, 1),
-            )
-        self.fpn_out = nn.ModuleList(fpn_out)
-
-        self.fpn_fuse = nn.Sequential(
-            conv3x3_bn_relu(len(in_dim) * fpn_out_dim, fpn_out_dim, 1),
+        self.center = CenterBlock(
+            in_channel=in_dim[-1],
+            out_channel=center_channels
         )
 
-    def forward(self, feature):
-        f = feature[-1]
-        pool_shape = f.shape[2:]
+        self.f_1 = DecodeBlock(
+            in_channel=center_channels + in_dim[-1],
+            out_channel=decoder_out_channels[0],
+            upsample=True
+        )
+        self.f_2 = DecodeBlock(
+            in_channel=decoder_out_channels[0] + in_dim[-2],
+            out_channel=decoder_out_channels[1],
+            upsample=True
+        )
+        self.f_3 = DecodeBlock(
+            in_channel=decoder_out_channels[1] + in_dim[-3],
+            out_channel=decoder_out_channels[2],
+            upsample=True
+        )
+        self.f_4 = DecodeBlock(
+            in_channel=decoder_out_channels[2] + in_dim[-4],
+            out_channel=decoder_out_channels[3],
+            upsample=True
+        )
+        self.g = DecodeBlock(
+            in_channel=decoder_out_channels[3],
+            out_channel=last_channels,
+            upsample=True
+        )
 
-        ppm_out = [f]
-        for pool, conv in zip(self.ppm_pooling, self.ppm_conv):
-            p = pool(f)
-            p = F.interpolate(p, size=pool_shape, mode='bilinear', align_corners=False)
-            p = conv(p)
-            ppm_out.append(p)
-        ppm_out = torch.cat(ppm_out, 1)
-        down = self.ppm_out(ppm_out)
+    def forward(
+            self,
+            feature: List[torch.Tensor]
+    ) -> Tuple[torch.Tensor, List[torch.Tensor]]:
+        last_feat = feature[-1]
+        # [batch_size; ; H // 32; H // 32]
+        last_feat = self.center(last_feat)
+        # [batch_size; ; H // 32; H // 32]
+        cat_center = torch.cat([last_feat, feature[-1]], dim=1)
 
-        fpn_out = [down]
-        for i in reversed(range(len(feature) - 1)):
-            lateral = feature[i]
-            lateral = self.fpn_in[i](lateral) # lateral branch
-            down = F.interpolate(down, size=lateral.shape[2:], mode='bilinear', align_corners=False) # top-down branch
-            down = down + lateral
-            fpn_out.append(self.fpn_out[i](down))
+        out_f_1 = self.f_1(cat_center)
+        # [batch_size; ; H // 16; H // 16]
+        cat_f_1 = torch.cat([out_f_1, feature[-2]], dim=1)
 
-        fpn_out.reverse() # [P2 - P5]
-        fusion_shape = fpn_out[0].shape[2:]
-        fusion = [fpn_out[0]]
-        for i in range(1, len(fpn_out)):
-            fusion.append(
-                F.interpolate( fpn_out[i], fusion_shape, mode='bilinear', align_corners=False)
-            )
-        x = self.fpn_fuse( torch.cat(fusion, 1))
+        out_f_2 = self.f_2(cat_f_1)
+        # [batch_size; ; H // 8; H // 8]
+        cat_f_2 = torch.cat([out_f_2, feature[-3]], dim=1)
 
-        return x, fusion
+        out_f_3 = self.f_3(cat_f_2)
+        # [batch_size; ; H // 4; H // 4]
+        cat_f_3 = torch.cat([out_f_3, feature[-4]], dim=1)
+
+        out_f_4 = self.f_4(cat_f_3)
+        # [batch_size; decoder_out_channels[3]; H // 2; W // 2]
+
+        last_feat_decoder = self.g(out_f_4)
+        # [batch_size; last_channels; H; W]
+
+        return (
+            last_feat_decoder,
+            [out_f_1, out_f_2, out_f_3, out_f_4]
+        )

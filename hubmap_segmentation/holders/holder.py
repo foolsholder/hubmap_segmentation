@@ -6,7 +6,7 @@ import pl_bolts
 import numpy as np
 import pytorch_lightning as pl
 
-from copy import deepcopy
+from copy import deepcopy, copy
 from torch.nn import functional as F
 from typing import (
     Dict, Optional, List, Tuple,
@@ -59,6 +59,26 @@ class ModelHolder(pl.LightningModule):
             losses = [
                 *[available_losses[loss]() for loss in config['losses']['names']],
             ]
+
+        aux_losses: List[LossMetric] = []
+        if 'aux' in config['losses'] \
+                and config['losses']['aux'] > 0. \
+                and len(losses) > 0:
+            for loss in losses:
+                aux_loss = type(loss)(
+                    loss_name='aux_' + loss._name
+                )
+                aux_losses += [aux_loss]
+            aux_weight = config['losses'].pop('aux')
+
+            loss_names = copy(config['losses']['names'])
+            loss_weigths = copy(config['losses']['weights'])
+
+            for loss_name, loss_weigth in zip(loss_names, loss_weigths):
+                config['losses']['names'] += ['aux_' + loss_name]
+                config['losses']['weights'] += [loss_weigth * aux_weight]
+
+        losses += aux_losses
         if len(losses) > 0:
             losses += [
                 LossAggregation(
@@ -66,6 +86,8 @@ class ModelHolder(pl.LightningModule):
                     loss_name='loss'
                 )
             ]
+
+
         self.losses_names = []
         for loss in losses:
             self.__setattr__(loss._name, loss)
