@@ -28,7 +28,7 @@ def mega_crop(
             sub_mask = mask[h_l:h_r, w_l:w_r]
 
             #print(mask.shape, h_l, h_r, h_r - h_l, sub_mask.shape, flush=True)
-            if np.mean(sub_mask) < 0.001:
+            if np.std(sub_tensor) < 5:
                 continue
 
             image_path = os.path.join(folder_path, id + '_{}'.format(idx))

@@ -20,7 +20,7 @@ from typing import Union, Dict, Any, Optional
 from .extra_augs import RandStainNA
 
 
-def get_test_augmentations() -> Compose:
+def get_norm_tensor_augmentations() -> Compose:
     return Compose(
         [
             Normalize(),

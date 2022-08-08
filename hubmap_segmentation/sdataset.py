@@ -16,7 +16,7 @@ from albumentations import (
 )
 from albumentations.pytorch import ToTensorV2
 from typing import Union, Dict, Any, Optional
-from .augmentations import get_simple_augmentations, get_test_augmentations
+from .augmentations import get_simple_augmentations, get_norm_tensor_augmentations
 
 
 class SDataset(Dataset):
@@ -43,7 +43,7 @@ class SDataset(Dataset):
         self.folder_images = 'full_images'
         self.folder_masks = 'full_masks'
 
-        suffix_csv = 'train_{}' if train else 'valid_{}'
+        suffix_csv = 'tiled_train_{}' if train else 'valid_{}'
         suffix_csv = suffix_csv.format(fold)
 
         self.df = pd.read_csv(os.path.join(
@@ -61,6 +61,7 @@ class SDataset(Dataset):
         }
         if augs is None:
             augs = get_simple_augmentations(train, height=height, width=width)
+        self.norm_tensor = get_norm_tensor_augmentations()
         self.augs = augs
 
     def __len__(self) -> int:
@@ -95,6 +96,7 @@ class SDataset(Dataset):
         if not self.train:
             res.update({
                 'full_target': torch.Tensor(target)[None],
+                'full_image': self.norm_tensor(image=image)
             })
         return res
 

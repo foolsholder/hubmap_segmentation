@@ -5,6 +5,11 @@
     "use_aux_head": true,
     "load_weights": "frog"
   },
+  "holder_cfg": {
+    "tiling_height": 1024,
+    "tiling_width": 1024,
+    "use_tiling_inf": true
+  },
   "max_epochs": 300,
   "opt_sched": {
     "opt": {

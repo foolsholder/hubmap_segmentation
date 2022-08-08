@@ -9,31 +9,7 @@ from typing import Dict, List, Union, Tuple, Optional, Any
 from .holder import ModelHolder
 
 
-class InfereceHolder(ModelHolder):
-    def _forward_impl(
-            self,
-            input_x: torch.Tensor,
-            additional_info: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        preds = self.segmentor(input_x)
-        return preds
-
-    def _forward(
-            self,
-            input_x: torch.Tensor,
-            additional_info: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        return self._forward_impl(input_x, additional_info)
-
-    def forward(
-            self,
-            input_x: torch.Tensor,
-            additional_info: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        return self._forward(input_x, additional_info)
-
-
-class TTAHolder(InfereceHolder):
+class TTAHolder(ModelHolder):
     def __init__(
             self,
             tta_list: List[Tuple[str, Any]],

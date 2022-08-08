@@ -37,15 +37,19 @@ class ModelHolder(pl.LightningModule):
             self,
             config: Dict[str, Any],
             smooth: float = 1e-7,
-            tiling_height: int = 512,
-            tiling_width: int = 512,
             thr: float = 0.5
     ):
         super(ModelHolder, self).__init__()
         self._config = deepcopy(config)
         self.segmentor: torch.nn.Module = create_model(config['model_cfg'])
+
+        tiling_height = config['holder_cfg']['tiling_height']
+        tiling_width = config['holder_cfg']['tiling_width']
+        use_tiling_inf = config['holder_cfg']['use_tiling_inf']
+
         self.tiling_height = tiling_height
         self.tiling_width = tiling_width
+        self.use_tiling_inf = use_tiling_inf
         metrics = [Dice(thr, smooth)]
         self.metrics_names = []
         for metric in metrics:
@@ -88,7 +92,6 @@ class ModelHolder(pl.LightningModule):
                 self.__setattr__(loss._name, loss)
                 self.losses_names += [loss._name]
 
-
     def training_step(
             self,
             batch_dict: Dict[str, torch.Tensor]
@@ -105,18 +108,17 @@ class ModelHolder(pl.LightningModule):
         self._stage = stage
         preds: Dict[str, torch.Tensor] = self.forward(input_x, additional_info=batch_dict)
 
-        for loss_name in self.losses_names:
-            loss = self.__getattr__(loss_name)
-            dct = loss.calc_loss_and_update_state(
-                preds,
-                batch_dict,
-                stage=stage
-            )
-            if stage != 'valid':
+        if stage != 'valid':
+            for loss_name in self.losses_names:
+                loss = self.__getattr__(loss_name)
+                dct = loss.calc_loss_and_update_state(
+                    preds,
+                    batch_dict,
+                    stage=stage
+                )
                 for k, v in dct.items():
                     self.log('{}_batch/{}'.format(k, stage), v, prog_bar=True)
-            preds.update(dct)
-
+                preds.update(dct)
         return preds
 
     def validation_step(
@@ -151,15 +153,77 @@ class ModelHolder(pl.LightningModule):
                     self.log(k, v, prog_bar=True)
             loss.reset()
 
+    def _forward_impl(
+            self,
+            input_x: torch.Tensor,
+            additional_info: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        preds = self.segmentor(input_x)
+        return preds
+
+    def _forward(
+            self,
+            input_x: torch.Tensor,
+            additional_info: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        return self._forward_impl(input_x, additional_info)
+
     def forward(
             self,
             input_x: torch.Tensor,
             additional_info: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        preds: Dict[str, torch.Tensor] = self.segmentor(input_x)
+        if self.segmentor.training or not self.use_tiling_inf:
+            preds: Dict[str, torch.Tensor] = self._forward(input_x, additional_info)
+        else:
+            preds: Dict[str, torch.Tensor] = self.sliding_window(input_x, additional_info)
         return preds
 
     def configure_optimizers(self):
         return create_opt_shed(self._config['opt_sched'], self.segmentor.parameters())
 
+    def sliding_window(
+            self,
+            input_x: torch.Tensor,
+            additional_info: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        if 'full_image' in additional_info:
+            input_x = additional_info['full_image']
+
+        h, w = input_x.shape[2:]
+
+        shift_h = self.tiling_height - self.tiling_height // 5
+        shift_w = self.tiling_width - self.tiling_width // 5
+        weight = torch.zeros((h, w)).to(input_x.device)
+        probs = torch.zeros((h, w)).to(input_x.device)
+        #logits = torch.zeros((h, w)).to(input_x.device)
+
+        h_cnt = (h - 1) // shift_h + 1
+        w_cnt = (w - 1) // shift_w + 1
+
+        shift_h = (h - 1) // h_cnt + 1
+        shift_w = (w - 1) // w_cnt + 1
+
+        #print(h_cnt, w_cnt, shift_h, shift_w, h, w, flush=True)
+
+        for h_idx in range(h_cnt):
+            h_right = min(h, shift_h * h_idx + self.tiling_height)
+            h_left = h_right - self.tiling_height
+            for w_idx in range(w_cnt):
+                w_right = min(w, shift_w * w_idx + self.tiling_width)
+                w_left = w_right - self.tiling_width
+
+                weight[h_left:h_right, w_left:w_right] += 1
+                input_window = input_x[:, :, h_left:h_right, w_left:w_right]
+                preds = self._forward(input_window, additional_info)
+                window_probs = preds['probs'][0, 0]
+                #window_logits = preds['logits'][0, 0]
+                probs[h_left:h_right, w_left:w_right] += window_probs
+                #logits[h_left:h_right, w_left:w_right] += window_logits
+        #logits = (logits / weight)[None, None]
+        probs = (probs / weight)[None, None]
+        return {
+            "probs": probs
+            #"probs": torch.sigmoid(logits)
+        }
 

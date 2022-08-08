@@ -1,5 +1,6 @@
 import pytorch_lightning as pl
 import os
+import torch
 
 from hubmap_segmentation.holders import EnsembleHolder
 from hubmap_segmentation.sdataset import create_loader
@@ -9,7 +10,12 @@ config = {
         'type': 'swin',
         'size': 'small',
         'load_weights': ''
-    }
+    },
+    "holder_cfg": {
+        "tiling_height": 1024,
+        "tiling_width": 1024,
+        "use_tiling_inf": True
+    },
 }
 
 if False:
@@ -27,7 +33,7 @@ model_holder = EnsembleHolder(
     ckpt_path_list=[
         os.path.join(
             os.environ['SHUBMAP_EXPS'],
-            'fbce+sdice_swinS_frog_adamw_512_V4_F0_SA',
+            '1024',
             'epoch.ckpt'
         )
     ],
@@ -36,10 +42,10 @@ model_holder = EnsembleHolder(
         ('flip', [-1]),
         ('flip', [-2]),
         ('flip', [-1, -2]),
-        ('transpose', None),
-        ('rotate90', 1),
-        ('rotate90', 2),
-        ('rotate90', 3),
+        #('transpose', None),
+        #('rotate90', 1),
+        #('rotate90', 2),
+        #('rotate90', 3),
     ]
 )
 
@@ -54,8 +60,10 @@ trainer.validate(
         train=False,
         batch_size=1,
         num_workers=2,
-        height=512,
-        width=512,
+        height=1024,
+        width=1024,
         fold=0
     )
 )
+
+print('Max memory allocated {:.2f} MB'.format(torch.cuda.max_memory_allocated('cuda:0') / 1024./ 1024.))
