@@ -106,13 +106,15 @@ class EfficientNetV3(nn.Module):
                 nn.init.uniform_(m.weight, -init_range, init_range)
                 nn.init.zeros_(m.bias)
 
-    def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
-        res: Dict[str,torch.Tensor] = {}
+    def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
+        #res: Dict[str,torch.Tensor] = {}
         x = self.input_conv(x)
+        res = []
         for layer_name in self.layers_names:
             layer = self.__getattr__(layer_name)
             x = layer(x)
-            res[layer_name] = x
+            #res[layer_name] = x
+            res += [x]
         return res
 
 

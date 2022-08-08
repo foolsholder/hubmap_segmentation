@@ -106,10 +106,10 @@ class SDataset(Dataset):
             mask: np.array
     ) -> Dict[str, Union[np.array, torch.Tensor]]:
         aug = self.augs(image=image, mask=mask)
-        while aug['mask'].sum() < 1.0:
-            aug = self.augs(image=image, mask=mask)
-            if np.random.rand() < self.prob_miss:
-                break
+        #while aug['mask'].sum() < 1.0:
+        #    aug = self.augs(image=image, mask=mask)
+        #    if np.random.rand() < self.prob_miss:
+        #        break
         return aug
 
 
