@@ -40,10 +40,10 @@ class SDataset(Dataset):
         self.data_folder: str = root
         self.root = root
 
-        self.folder_images = 'full_images'
-        self.folder_masks = 'full_masks'
+        self.folder_images = 'resized_images/images_scaled_{}'.format(2 * height)
+        self.folder_masks = 'resized_images/masks_scaled_{}'.format(2 * height)
 
-        suffix_csv = 'tiled_train_{}' if train else 'valid_{}'
+        suffix_csv = 'train_{}' if train else 'valid_{}'
         suffix_csv = suffix_csv.format(fold)
 
         self.df = pd.read_csv(os.path.join(
@@ -65,7 +65,7 @@ class SDataset(Dataset):
         self.augs = augs
 
     def __len__(self) -> int:
-        return len(self.df) * (4 if self.train else 1)
+        return len(self.df) * (20 if self.train else 1)
 
     def __getitem__(
             self,
@@ -96,7 +96,7 @@ class SDataset(Dataset):
         if not self.train:
             res.update({
                 'full_target': torch.Tensor(target)[None],
-                'full_image': self.norm_tensor(image=image)
+                'full_image': self.norm_tensor(image=image)['image']
             })
         return res
 

@@ -7,7 +7,7 @@ from albumentations import (
     Compose, Transpose,
     HorizontalFlip,
     VerticalFlip, Rotate, RandomRotate90,
-    ShiftScaleRotate, ElasticTransform, Affine,
+    ShiftScaleRotate, ElasticTransform, Affine, PadIfNeeded,
     GridDistortion, RandomSizedCrop, RandomCrop, CenterCrop,
     RandomBrightnessContrast, HueSaturationValue, IAASharpen,
     RandomGamma, RandomBrightness, RandomBrightnessContrast,
@@ -40,12 +40,36 @@ def get_simple_augmentations(
             [
                 #RandomCrop(height, width, p=1.0),
                 #Morphology
-                RandomResizedCrop(
+                RandomCrop(
                     height=height,
                     width=width,
-                    scale=(0.75, 1.25),
-                    interpolation=cv2.INTER_LANCZOS4,
                     always_apply=True
+                ), # 1024x1024 -> 512x512
+                OneOf([
+                    Compose(
+                        [
+                            RandomResizedCrop(
+                                height=height//2,
+                                width=width//2,
+                                scale=(0.45, 0.55),
+                                interpolation=cv2.INTER_LANCZOS4,
+                                always_apply=True
+                            ),
+                            PadIfNeeded(
+                                min_height=height,
+                                min_width=width,
+                                always_apply=True
+                            )
+                        ],
+                        p=0.5
+                    ),
+                    CoarseDropout(max_holes=2,
+                              max_height=height//4, max_width=width//4,
+                              min_holes=1,
+                              min_height=height//16, min_width=width//16,
+                              fill_value=0, mask_fill_value=0, p=0.5),
+                    ],
+                    p=0.5
                 ),
                 RandomRotate90(p=0.5),
                 VerticalFlip(p=0.5),
@@ -63,7 +87,7 @@ def get_simple_augmentations(
                 # NEW
                 OneOf(
                     [
-                        GaussianBlur(blur_limit=(3,5), p=0.5),
+                        GaussianBlur(blur_limit=(13,17), p=0.5),
                         GaussNoise(var_limit=(25, 30), p=0.5)
                     ],
                     p=0.5
@@ -90,11 +114,6 @@ def get_simple_augmentations(
                     ],
                     p=0.875
                 ),
-                CoarseDropout(max_holes=2,
-                              max_height=height//4, max_width=width//4,
-                              min_holes=1,
-                              min_height=height//16, min_width=width//16,
-                              fill_value=0, mask_fill_value=0, p=0.5),
                 Normalize(),
                 ToTensorV2()
             ]

@@ -6,11 +6,11 @@
     "load_weights": "frog"
   },
   "holder_cfg": {
-    "tiling_height": 1024,
-    "tiling_width": 1024,
+    "tiling_height": 512,
+    "tiling_width": 512,
     "use_tiling_inf": true
   },
-  "max_epochs": 300,
+  "max_epochs": 150,
   "opt_sched": {
     "opt": {
       "type": "AdamW",
@@ -21,7 +21,7 @@
     },
     "sched": {
       "type": "LinearWarmupCosineAnnealingLR",
-      "warmup_epochs": 500,
+      "warmup_epochs": 1000,
       "max_epochs": -1,
       "warmup_start_lr": 1e-8,
       "eta_min": 1e-3,
@@ -31,22 +31,22 @@
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "fbce+sdice_swinS_frog_adamw_1024_V4_F0_SA"
+    "name": "scaled_fbce+sdice_swinS_frog_adamw_512_V4_F0_SA"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 2,
+    "batch_size": 4,
     "num_workers": 8,
-    "height": 1024,
-    "width": 1024,
+    "height": 512,
+    "width": 512,
     "fold": 0
   },
   "valid_loader": {
     "train": false,
     "batch_size": 1,
     "num_workers": 4,
-    "height": 1024,
-    "width": 1024,
+    "height": 512,
+    "width": 512,
     "fold": 0
   },
   "losses": {

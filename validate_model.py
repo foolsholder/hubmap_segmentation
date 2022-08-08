@@ -12,8 +12,8 @@ config = {
         'load_weights': ''
     },
     "holder_cfg": {
-        "tiling_height": 1024,
-        "tiling_width": 1024,
+        "tiling_height": 512,
+        "tiling_width": 512,
         "use_tiling_inf": True
     },
 }
@@ -42,10 +42,10 @@ model_holder = EnsembleHolder(
         ('flip', [-1]),
         ('flip', [-2]),
         ('flip', [-1, -2]),
-        #('transpose', None),
-        #('rotate90', 1),
-        #('rotate90', 2),
-        #('rotate90', 3),
+        ('transpose', None),
+        ('rotate90', 1),
+        ('rotate90', 2),
+        ('rotate90', 3),
     ]
 )
 
@@ -60,8 +60,8 @@ trainer.validate(
         train=False,
         batch_size=1,
         num_workers=2,
-        height=1024,
-        width=1024,
+        height=512,
+        width=512,
         fold=0
     )
 )
