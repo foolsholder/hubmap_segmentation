@@ -8,7 +8,7 @@
   "max_epochs": 300,
   "opt_sched": {
     "opt": {
-      "type": "AdamW",
+      "type": "RAdam",
       "lr": 3e-4,
       "weight_decay": 1e-3,
       "betas": [0.9, 0.999],
@@ -30,7 +30,7 @@
   },
   "train_loader": {
     "train": true,
-    "batch_size": 4,
+    "batch_size": 8,
     "num_workers": 8,
     "height": 512,
     "width": 512,

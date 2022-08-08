@@ -9,46 +9,46 @@
   "opt_sched": {
     "opt": {
       "type": "AdamW",
-      "lr": 3e-4,
-      "weight_decay": 1e-3,
+      "lr": 1e-3,
+      "weight_decay": 5e-2,
       "betas": [0.9, 0.999],
       "eps": 1e-8
     },
     "sched": {
       "type": "LinearWarmupCosineAnnealingLR",
-      "warmup_epochs": 1500,
+      "warmup_epochs": 500,
       "max_epochs": -1,
       "warmup_start_lr": 1e-8,
-      "eta_min": 3e-4,
+      "eta_min": 1e-3,
       "interval": "step"
     }
   },
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "fbce+sdice_swinS_frog_adamw_512_V4_F0_SA"
+    "name": "fbce+sdice_swinS_frog_adamw_1024_V4_F0_SA"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 4,
+    "batch_size": 2,
     "num_workers": 8,
-    "height": 512,
-    "width": 512,
+    "height": 1024,
+    "width": 1024,
     "fold": 0
   },
   "valid_loader": {
     "train": false,
     "batch_size": 1,
     "num_workers": 4,
-    "height": 512,
-    "width": 512,
+    "height": 1024,
+    "width": 1024,
     "fold": 0
   },
   "losses": {
-    "weights": [1.0, 1.0],
+    "weights": [1.0, 10.0],
     "names": [
-        "bce",
-        "sigmoid_soft_dice"
+        "sigmoid_soft_dice",
+        "binary_focal_loss"
     ],
     "aux": 0.4
   },
@@ -57,5 +57,5 @@
   "gpus": 4,
   "num_nodes": 1,
   "log_every_n_steps": 1,
-  "gradient_clip_val": 1.0
+  "gradient_clip_val": 5.0
 }

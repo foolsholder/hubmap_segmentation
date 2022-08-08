@@ -46,9 +46,9 @@ if __name__ == '__main__':
 
     random_seed = 1_019_541
 
-    df = pd.read_csv(os.path.join(root, 'csv_files', 'train.csv'))
+    df = pd.read_csv(os.path.join(root, 'train.csv'))
 
-    K = 4
+    K = 5
     splitter = KFold(n_splits=K, shuffle=True, random_state=random_seed)
 
     train_dfs = []
@@ -72,6 +72,7 @@ if __name__ == '__main__':
             os.path.join(root, 'csv_files', 'valid_{}.csv'.format(idx)),
             index=False)
 
+        continue
         tiled_train_df = create_tiled_and_filter(train_df, H=1024)
         tiled_valid_df = create_tiled_and_filter(valid_df, H=512)
 

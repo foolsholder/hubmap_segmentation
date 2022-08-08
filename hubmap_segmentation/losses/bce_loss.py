@@ -7,8 +7,8 @@ from torch.nn import functional as F
 
 
 class BCELoss(LossMetric):
-    def __init__(self, loss_name: str = 'bce'):
-        super().__init__(loss_name=loss_name)
+    def __init__(self, loss_name: str = 'bce', **kwargs):
+        super().__init__(loss_name=loss_name, **kwargs)
 
     def batch_loss_and_name(
             self,
@@ -16,7 +16,7 @@ class BCELoss(LossMetric):
             batch: Dict[str, torch.Tensor],
             stage: str = 'train'
     ) -> Tuple[str, torch.Tensor]:
-        logits = preds['logits']
+        logits = preds[self.prefix + 'logits']
         target = batch['target']
 
         name = self._name

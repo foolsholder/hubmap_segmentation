@@ -10,8 +10,9 @@ class SigmoidSoftDiceLoss(LossMetric):
     def __init__(
             self,
             loss_name: str = 'sigmoid_soft_dice',
+            **kwargs
     ):
-        super().__init__(loss_name=loss_name)
+        super().__init__(loss_name=loss_name, **kwargs)
 
     def batch_loss_and_name(
             self,
@@ -19,7 +20,7 @@ class SigmoidSoftDiceLoss(LossMetric):
             batch: Dict[str, torch.Tensor],
             stage: str = 'train'
     ) -> Tuple[str, torch.Tensor]:
-        probs = preds['probs']
+        probs = preds[self.prefix + 'probs']
         target = batch['target']
 
         batch_size = target.shape[0]
@@ -29,7 +30,7 @@ class SigmoidSoftDiceLoss(LossMetric):
         name = self._name
 
         mult = (2 * probs * target).sum(dim=1) + 1.
-        denom = probs.sum(dim=1) + target.sum(dim=1) + 1.
+        denom = probs.pow(2).sum(dim=1) + target.pow(2).sum(dim=1) + 1.
         dice_loss = 1 - mult / denom
         dice_loss = torch.mean(dice_loss)
         return name, dice_loss

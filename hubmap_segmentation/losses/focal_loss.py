@@ -11,9 +11,10 @@ class BinaryFocalLoss(LossMetric):
             self,
             loss_name: str = 'binary_focal_loss',
             gamma: float = 2.,
-            alpha: float = 0.25
+            alpha: float = 0.25,
+            **kwargs
     ):
-        super().__init__(loss_name=loss_name)
+        super().__init__(loss_name=loss_name, **kwargs)
         self.gamma = gamma
         self.alpha = alpha
 
@@ -23,8 +24,8 @@ class BinaryFocalLoss(LossMetric):
             batch: Dict[str, torch.Tensor],
             stage: str = 'train'
     ) -> Tuple[str, torch.Tensor]:
-        logits = preds['logits']
-        probs = preds['probs']
+        logits = preds[self.prefix + 'logits']
+        probs = preds[self.prefix + 'probs']
         target = batch['target']
 
         name = self._name

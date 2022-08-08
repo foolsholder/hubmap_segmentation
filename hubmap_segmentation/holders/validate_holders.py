@@ -16,7 +16,6 @@ class InfereceHolder(ModelHolder):
             additional_info: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         preds = self.segmentor(input_x)
-        preds.pop('logits')
         return preds
 
     def _forward(
@@ -55,6 +54,7 @@ class TTAHolder(InfereceHolder):
         """
         idx_tta = self.idx_tta
         batch_input = [input_x]
+        # [1, 3, H, W]
 
         #preds['full_probs'] = F.interpolate(preds['probs'], size=self._shape, mode='bicubic')
         for type_aug, args_aug in idx_tta:
@@ -68,7 +68,10 @@ class TTAHolder(InfereceHolder):
             batch_input += [input_y]
 
         batch_input = torch.cat(batch_input, dim=0)
+        # [T, 3, H, W]
+
         preds = self._forward_impl(batch_input, additional_info)
+        # [T, 1, H, W]
 
         idx_preds = 1
         for type_aug, args_aug in idx_tta:
@@ -82,8 +85,10 @@ class TTAHolder(InfereceHolder):
             #x = F.interpolate(x, self._shape, mode='bicubic')
             preds['probs'][idx_preds:idx_preds+1] = x
             idx_preds += 1
-
+        #preds['logits'] = torch.mean(preds['logits'], dim=0, keepdim=True)
+        #preds['probs'] = torch.sigmoid(preds['logits'])
         preds['probs'] = torch.mean(preds['probs'], dim=0, keepdim=True)
+        # [1, 1, H, W]
         return preds
 
 
@@ -136,13 +141,16 @@ class EnsembleHolder(TTAHolder):
         w_sum = np.sum(w)
 
         for idx, st in enumerate(self.state_dicts):
-            self.segmentor.load_state_dict(st)
+            self.segmentor.load_state_dict(st, strict=False)
+            # [T, 3, H, W]
             preds_tmp = super(EnsembleHolder, self)._forward_impl(input_x, additional_info=additional_info)
             tensor = preds_tmp['probs'] * w[idx]
             probs += [tensor[None]]
         probs = torch.cat(probs, dim=0)
+        # [M; T; 1; H, W]
         probs = torch.sum(probs, dim=0, keepdim=False) / w_sum
         preds = {
-            'probs': probs
+            'probs': probs,
+            #'probs': torch.sigmoid(logits)
         }
         return preds

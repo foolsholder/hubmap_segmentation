@@ -27,8 +27,8 @@ model_holder = EnsembleHolder(
     ckpt_path_list=[
         os.path.join(
             os.environ['SHUBMAP_EXPS'],
-            'tiled_fbce+sdice_swinS_frog_adamw_512_V4_F0_SA',
-            'swinS_tiled_epoch_f0.ckpt'
+            'fbce+sdice_swinS_frog_adamw_512_V4_F0_SA',
+            'epoch.ckpt'
         )
     ],
     weights=weights,
@@ -52,10 +52,10 @@ trainer.validate(
     model=model_holder,
     dataloaders=create_loader(
         train=False,
-        test=True,
         batch_size=1,
         num_workers=2,
         height=512,
-        width=512
+        width=512,
+        fold=0
     )
 )

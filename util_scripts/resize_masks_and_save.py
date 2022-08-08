@@ -9,6 +9,23 @@ from sys import argv
 from PIL import Image
 
 
+def pad(tmp):
+    pad_h = 3000 - tmp.shape[0]
+    pad_w = 3000 - tmp.shape[1]
+
+    if pad_w < 0 or pad_h < 0:
+        return tmp
+
+    fst_h = pad_h // 2
+    snd_h = pad_h - fst_h
+
+    fst_w = pad_w // 2
+    snd_w = pad_w - fst_w
+
+    if len(tmp.shape) == 3:
+        return np.pad(tmp, ((fst_h, snd_h), (fst_w,snd_w), (0, 0)), constant_values=0)
+    return np.pad(tmp, ((fst_h, snd_h), (fst_w,snd_w)), constant_values=0)
+
 def create_masks():
     if 'SDATASET_PATH' in os.environ:
         root = os.environ['SDATASET_PATH']
@@ -25,7 +42,7 @@ def create_masks():
         os.makedirs(new_masks_path)
 
     masks_full_ref = os.path.join(root, 'full_masks')
-    flag = False
+    flag = True
     if not os.path.exists(masks_full_ref):
         os.makedirs(masks_full_ref)
         flag = True
@@ -48,6 +65,9 @@ def create_masks():
             tmp[i:i+length] = 1
 
         tmp = tmp.reshape((w, h)).T
+        tmp = pad(tmp)
+
+
         if flag:
             np.save(os.path.join(masks_full_ref, id), tmp)
         tmp = Image.fromarray(tmp)
@@ -74,7 +94,7 @@ def create_images():
         os.makedirs(new_images_path)
 
     images_full_ref = os.path.join(root, 'full_images')
-    flag = False
+    flag = True
     if not os.path.exists(images_full_ref):
         os.makedirs(images_full_ref)
         flag = True
@@ -85,8 +105,11 @@ def create_images():
         id = str(id)
 
         tmp = Image.open(os.path.join(root, 'train_images', id + '.tiff'))
+        tmp = np.array(tmp)
+        tmp = pad(tmp)
         if flag:
-            np.save(os.path.join(images_full_ref, id), np.array(tmp))
+            np.save(os.path.join(images_full_ref, id), tmp)
+        tmp = Image.fromarray(tmp)
         tmp = tmp.resize(size=(H, H), resample=Image.LANCZOS)
         tmp = np.array(tmp)
 
@@ -94,5 +117,5 @@ def create_images():
 
 
 if __name__ == '__main__':
-    #create_masks()
+    create_masks()
     create_images()

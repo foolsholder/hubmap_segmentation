@@ -25,7 +25,7 @@ class TverskyLoss(LossMetric):
             batch: Dict[str, torch.Tensor],
             stage: str = 'train'
     ) -> Tuple[str, torch.Tensor]:
-        probs = preds['probs']
+        probs = preds[self.prefix + 'probs']
         target = batch['target']
 
         batch_size = target.shape[0]

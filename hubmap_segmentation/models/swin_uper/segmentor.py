@@ -31,7 +31,13 @@ class SwinUperNet(nn.Module):
         )
 
         self.final_conv = nn.Sequential(
-            nn.Conv2d(last_channels, last_channels, kernel_size=3, padding=1),
+            nn.Conv2d(
+                last_channels,
+                last_channels,
+                kernel_size=3,
+                padding=1,
+                #bias=False
+            ),
             nn.BatchNorm2d(last_channels),
             nn.ReLU(inplace=True),
             nn.Conv2d(last_channels, num_classes, kernel_size=1)
@@ -39,7 +45,13 @@ class SwinUperNet(nn.Module):
         self.use_aux_head = use_aux_head
         if use_aux_head:
             self.aux_head = nn.Sequential(
-                nn.Conv2d(decoder_out[-1], last_channels, kernel_size=3, padding=1),
+                nn.Conv2d(
+                    decoder_out[-1],
+                    last_channels,
+                    kernel_size=3,
+                    padding=1,
+                    #bias=False
+                ),
                 nn.BatchNorm2d(last_channels),
                 nn.ReLU(inplace=True),
                 nn.Conv2d(last_channels, num_classes, kernel_size=1)

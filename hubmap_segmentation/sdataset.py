@@ -23,7 +23,6 @@ class SDataset(Dataset):
     def __init__(
             self,
             train: bool = True,
-            test: bool = False,
             root: str = '',
             augs: Optional[Compose] = None,
             height: int = 512,
@@ -44,15 +43,9 @@ class SDataset(Dataset):
         self.folder_images = 'full_images'
         self.folder_masks = 'full_masks'
 
-        suffix_csv = 'train' if train else 'valid'
-        if test or fold is None:
-            test = True
-            suffix_csv = 'test'
-        else:
-            suffix_csv += '_' + str(fold)
+        suffix_csv = 'train_{}' if train else 'valid_{}'
+        suffix_csv = suffix_csv.format(fold)
 
-        self.test = test
-        self.test_aug = get_test_augmentations()
         self.df = pd.read_csv(os.path.join(
             root,
             'csv_files',
@@ -71,7 +64,7 @@ class SDataset(Dataset):
         self.augs = augs
 
     def __len__(self) -> int:
-        return len(self.df) * (10 if self.train else 1)
+        return len(self.df) * (4 if self.train else 1)
 
     def __getitem__(
             self,
@@ -84,7 +77,8 @@ class SDataset(Dataset):
             self.root,
             self.folder_images,
             image_id + '.npy'
-        ))
+        ))#.astype(np.float32)
+        #image = (image / np.max(image) * 255).astype(np.uint8)
         target = np.load(os.path.join(
             self.root,
             self.folder_masks,
@@ -110,28 +104,30 @@ class SDataset(Dataset):
             mask: np.array
     ) -> Dict[str, Union[np.array, torch.Tensor]]:
         aug = self.augs(image=image, mask=mask)
-        #while aug['mask'].sum() < 1.0:
-        #    aug = self.augs(image=image, mask=mask)
-        #    if np.random.rand() < self.prob_miss:
-        #        break
+        while aug['mask'].sum() < 1.0:
+            aug = self.augs(image=image, mask=mask)
+            if np.random.rand() < self.prob_miss:
+                break
         return aug
 
 
 def create_loader(
         train: bool = True,
-        test: bool = False,
         batch_size: int = 4,
         num_workers: int = 4,
         height: int = 512,
         width: int = 512,
         fold: Optional[int] = None
     ) -> DataLoader:
-    dataset = SDataset(train, test, height=height, width=width, fold=fold)
+    dataset = SDataset(train,
+                       height=height, width=width,
+                       fold=fold)
     return DataLoader(
         dataset,
         batch_size=batch_size,
         num_workers=num_workers,
-        shuffle=train
+        shuffle=train,
+        drop_last=train
     )
 
 

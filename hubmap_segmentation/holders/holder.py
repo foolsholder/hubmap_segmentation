@@ -53,33 +53,30 @@ class ModelHolder(pl.LightningModule):
             self.metrics_names += [metric._name]
 
         self._stages_names = ['train', 'valid']
+        self.losses_names = []
+        self.aux_losses_names = []
 
-        losses: List[LossMetric] = []
         if 'losses' in config:
             losses = [
                 *[available_losses[loss]() for loss in config['losses']['names']],
             ]
 
-        aux_losses: List[LossMetric] = []
-        if 'aux' in config['losses'] \
-                and config['losses']['aux'] > 0. \
-                and len(losses) > 0:
-            for loss in losses:
-                aux_loss = type(loss)(
-                    loss_name='aux_' + loss._name
-                )
-                aux_losses += [aux_loss]
-            aux_weight = config['losses'].pop('aux')
+            if 'aux' in config['losses'] \
+                    and config['losses']['aux'] > 0. \
+                    and len(losses) > 0:
+                aux_losses = [
+                    *[available_losses[loss](aux=True) for loss in config['losses']['names']],
+                ]
+                aux_weight = config['losses'].pop('aux')
 
-            loss_names = copy(config['losses']['names'])
-            loss_weigths = copy(config['losses']['weights'])
+                loss_names = copy(config['losses']['names'])
+                loss_weigths = copy(config['losses']['weights'])
 
-            for loss_name, loss_weigth in zip(loss_names, loss_weigths):
-                config['losses']['names'] += ['aux_' + loss_name]
-                config['losses']['weights'] += [loss_weigth * aux_weight]
+                for loss_name, loss_weigth in zip(loss_names, loss_weigths):
+                    config['losses']['names'] += ['aux_' + loss_name]
+                    config['losses']['weights'] += [loss_weigth * aux_weight]
 
-        losses += aux_losses
-        if len(losses) > 0:
+                losses += aux_losses
             losses += [
                 LossAggregation(
                     dict(zip(config['losses']['names'], config['losses']['weights'])),
@@ -87,11 +84,10 @@ class ModelHolder(pl.LightningModule):
                 )
             ]
 
+            for loss in losses:
+                self.__setattr__(loss._name, loss)
+                self.losses_names += [loss._name]
 
-        self.losses_names = []
-        for loss in losses:
-            self.__setattr__(loss._name, loss)
-            self.losses_names += [loss._name]
 
     def training_step(
             self,

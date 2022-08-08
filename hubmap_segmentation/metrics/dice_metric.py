@@ -13,12 +13,11 @@ class Dice(Metric):
         self.smooth = smooth
         self._name = 'dice'
 
-        for organ in ['lung', 'spleen', 'kidney', 'prostate', 'largeintestine']:
+        for organ in ['lung', 'spleen', 'kidney', 'prostate', 'largeintestine', 'wo_kidney']:
             self.add_state('{}_dice'.format(organ), default=torch.tensor(0.), dist_reduce_fx="sum")
             self.add_state('{}_samples'.format(organ), default=torch.tensor(0.), dist_reduce_fx="sum")
         self.add_state("sum_dice", default=torch.tensor(0.), dist_reduce_fx="sum")
         self.add_state("total_samples", default=torch.tensor(0.), dist_reduce_fx="sum")
-
 
     def update(
             self,
@@ -56,6 +55,9 @@ class Dice(Metric):
             elif organ == 'largeintestine':
                 self.largeintestine_dice += dice[idx]#.item()
                 self.largeintestine_samples += 1
+            if organ != 'kidney':
+                self.wo_kidney_dice += dice[idx]
+                self.wo_kidney_samples += 1
 
         #with open('full_res_metrics.txt', 'a') as f:
         #    f.write('{}, {}, {}\n'.format(batch['image_id'][0], batch['organ'][0], dice.item()))
@@ -65,7 +67,7 @@ class Dice(Metric):
 
     def compute_every(self) -> Dict[str, torch.Tensor]:
         res = {}
-        for organ in ['lung', 'spleen', 'kidney', 'prostate', 'largeintestine']:
+        for organ in ['lung', 'spleen', 'kidney', 'prostate', 'largeintestine', 'wo_kidney']:
             #attr_sum = self.__getattr__('{}_dice'.format(organ))
             #attr_cnt = self.__getattr__('{}_samples'.format(organ))
             #res[self._name + '/' + organ] = attr_sum / attr_cnt
@@ -80,7 +82,7 @@ class Dice(Metric):
             elif organ == 'largeintestine':
                 value = self.largeintestine_dice.float() / self.largeintestine_samples
             else:
-                value = 0
+                value = self.wo_kidney_dice.float() / self.wo_kidney_samples
             res[self._name + '/' + organ] = value
         res[self._name + '/valid'] = self.compute()
         return res

@@ -3,12 +3,21 @@ import torch
 import pytorch_lightning as pl
 from torchmetrics import Metric
 from typing import Dict, Any, Tuple
+from copy import copy
 
 
 class LossMetric(Metric):
-    def __init__(self, loss_name: str, **kwargs):
+    def __init__(
+            self,
+            loss_name: str,
+            aux: bool = False,
+            **kwargs):
         super(LossMetric, self).__init__(**kwargs)
-        self._name = loss_name
+        if aux:
+            self.prefix = 'aux_'
+        else:
+            self.prefix = ''
+        self._name = self.prefix + loss_name
 
         self.add_state("train_sum_loss", default=torch.tensor(0.), dist_reduce_fx="sum")
         self.add_state("train_samples", default=torch.tensor(0.), dist_reduce_fx="sum")
