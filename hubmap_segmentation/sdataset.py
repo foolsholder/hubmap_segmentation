@@ -28,10 +28,10 @@ class SDataset(Dataset):
             height: int = 512,
             width: int = 512,
             fold: Optional[int] = None,
-            prob_miss: float = 0.05
+            num_classes: int = 1
     ):
         super(SDataset, self).__init__()
-        self.prob_miss = prob_miss
+        self.num_classes = num_classes
         if root == '':
             root = os.environ['SDATASET_PATH']
         self.height = height
@@ -53,11 +53,11 @@ class SDataset(Dataset):
         ))
         #self.df = self.df[self.df.organ != 'kidney']
         self.organ2id = {
-            'kidney': 0,
-            'largeintestine': 1,
-            'lung': 2,
-            'prostate': 3,
-            'spleen': 4
+            'kidney': 1,
+            'largeintestine': 2,
+            'lung': 3,
+            'prostate': 4,
+            'spleen': 5
         }
         if augs is None:
             augs = get_simple_augmentations(train, height=height, width=width)
@@ -65,6 +65,7 @@ class SDataset(Dataset):
         self.augs = augs
 
     def __len__(self) -> int:
+        if self.train: return 32
         return len(self.df) * (5 if self.train else 1)
 
     def __getitem__(
@@ -86,19 +87,36 @@ class SDataset(Dataset):
             image_id + '.npy'
         ))
         aug_dict = self.get_augmented(image=image, mask=target)
+        mask = aug_dict['mask'][None]
         res = {
             "input_x": aug_dict['image'],
-            "target": aug_dict['mask'][None],
+            "target": self._to_ohe(mask, self.organ2id[row['organ']]),
             'image_id': image_id,
             'organ': row['organ'],
             'organ_id': self.organ2id[row['organ']]
         }
         if not self.train:
+            full_mask = np.load(os.path.join(
+                self.root,
+                'full_masks',
+                image_id + '.npy'
+            ))
+            full_mask = torch.Tensor(full_mask)[None]
             res.update({
-                'full_target': torch.Tensor(target)[None],
+                'full_target': full_mask,
                 'full_image': self.norm_tensor(image=image)['image']
             })
         return res
+
+    def _to_ohe(self, mask_tensor: torch.Tensor, organ_id: int) -> torch.Tensor:
+        if self.num_classes == 1:
+            return mask_tensor
+        zero_cls = 1 - mask_tensor
+        arr = [zero_cls]
+        arr += [torch.zeros_like(mask_tensor)] * (organ_id - 1)
+        arr += [mask_tensor]
+        arr += [torch.zeros_like(mask_tensor)] * (self.num_classes - organ_id - 1)
+        return torch.cat(arr, dim=0) # [NUM_CLASSES; H; W]
 
     def get_augmented(
             self,
@@ -119,11 +137,12 @@ def create_loader(
         num_workers: int = 4,
         height: int = 512,
         width: int = 512,
-        fold: Optional[int] = None
+        fold: Optional[int] = None,
+        num_classes: int = 1
     ) -> DataLoader:
     dataset = SDataset(train,
                        height=height, width=width,
-                       fold=fold)
+                       fold=fold, num_classes=num_classes)
     return DataLoader(
         dataset,
         batch_size=batch_size,

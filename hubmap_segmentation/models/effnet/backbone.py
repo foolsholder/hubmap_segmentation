@@ -3,6 +3,7 @@ import math
 import warnings
 import copy
 
+import os
 from torch import nn
 
 from torchvision.models.efficientnet import (
@@ -159,3 +160,17 @@ def efficientnet_v2_m(
         norm_layer=partial(nn.BatchNorm2d, eps=1e-03),
         **kwargs,
     )
+
+
+def create_effnet(load_weights: str = ''):
+    model = efficientnet_v2_m()
+    if load_weights == 'imagenet':
+        model.load_state_dict(
+            torch.load(
+                os.path.join(
+                    os.environ['PRETRAINED'],
+                    'effnet_v3_imagenet.pth'),
+                map_location='cpu'),
+            strict=False
+        )
+    return model

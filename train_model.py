@@ -14,9 +14,22 @@ from pytorch_lightning.loggers import WandbLogger
 
 parser = argparse.ArgumentParser(description='Get config')
 parser.add_argument('--config_path', type=str, required=True, default='')
+parser.add_argument('--fold', type=int, default=0)
 args = parser.parse_args()
 
 config: Dict[str, Union[Dict, str, int]] = json.load(open(args.config_path, 'r'), object_pairs_hook=OrderedDict)
+
+FOLD: int = args.fold
+
+devices = torch.cuda.device_count()
+config['wandb_cfg']['name'] = config['wandb_cfg']['name'].format(
+    os.environ['DEVICE_TYPE'],
+    devices,
+    FOLD
+)
+config['train_loader']['fold'] = FOLD
+config['valid_loader']['fold'] = FOLD
+
 max_epochs: int = config['max_epochs']
 if 'seed' in config.keys():
     if config['seed']:
@@ -28,8 +41,10 @@ wandb_logger = WandbLogger(**config['wandb_cfg'])
 trainer = pl.Trainer(
     max_epochs=max_epochs,
     strategy=config['strategy'],
-    gpus=config['gpus'],
+    accelerator='gpu',
+    devices=devices,
     num_nodes=config['num_nodes'],
+    sync_batchnorm=True,
     log_every_n_steps=config['log_every_n_steps'],
     gradient_clip_val=config['gradient_clip_val'],
     callbacks=[

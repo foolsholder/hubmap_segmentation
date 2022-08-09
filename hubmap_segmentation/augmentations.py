@@ -11,7 +11,7 @@ from albumentations import (
     GridDistortion, RandomSizedCrop, RandomCrop, CenterCrop,
     RandomBrightnessContrast, HueSaturationValue, IAASharpen,
     RandomGamma, RandomBrightness, RandomBrightnessContrast,
-    GaussianBlur, CLAHE, RGBShift, RandomResizedCrop,
+    GaussianBlur, CLAHE, RGBShift, RandomResizedCrop, ImageCompression,
     Cutout, CoarseDropout, GaussNoise, ChannelShuffle, ToGray, OpticalDistortion,
     Normalize, OneOf, NoOp
 )
@@ -50,23 +50,22 @@ def get_simple_augmentations(
                 HorizontalFlip(p=0.5),
                 Transpose(p=0.5),
 
-                ShiftScaleRotate(shift_limit=0, scale_limit=0.1,
-                                 rotate_limit=(-45,45),
-                                 interpolation=cv2.INTER_LANCZOS4,
-                                 border_mode=0, p=0.5),
-
                 #RandStainNA(p=1.0),
-
+                ImageCompression(quality_lower=85, quality_upper=95, p=0.5),
                 # NEW
-                OpticalDistortion(
-                    p=0.5,
-                    interpolation=cv2.INTER_LANCZOS4
+                ChannelShuffle(p=0.5),
+
+                CLAHE(p=0.5), #NEW
+                RGBShift(p=0.5),
+                OneOf([
+                    RandomGamma(p=0.5),
+                    RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.4,
+                                             brightness_by_max=True,p=0.5)
+                    ],
+                    p=0.5
                 ),
-                #Affine(
-                #    p=0.5,
-                #    interpolation=cv2.INTER_LANCZOS4
-                #),
-                #Color
+                HueSaturationValue(hue_shift_limit=40, sat_shift_limit=40,
+                                   val_shift_limit=25, p=0.5),
                 OneOf(
                     [
                         GaussianBlur(blur_limit=(7, 19), p=0.5),
@@ -74,19 +73,13 @@ def get_simple_augmentations(
                     ],
                     p=0.5,
                 ),
-                OneOf([
-                    ToGray(p=0.5),
-                    ChannelShuffle(p=0.5),
-                    ],
-                    p=0.75
-                ),
-                CLAHE(p=0.5), #NEW
-                RGBShift(p=0.5),
-                RandomGamma(p=0.5),
-                RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.4,
-                                         brightness_by_max=True,p=0.5),
-                HueSaturationValue(hue_shift_limit=40, sat_shift_limit=40,
-                                   val_shift_limit=25, p=0.5),
+
+                ShiftScaleRotate(shift_limit=0, scale_limit=0.25,
+                                 rotate_limit=(-45,45),
+                                 interpolation=cv2.INTER_LANCZOS4,
+                                 border_mode=0, p=0.5),
+
+
                 Normalize(),
                 ToTensorV2()
             ]
@@ -95,11 +88,11 @@ def get_simple_augmentations(
         # INTER_LANCZOS4
         return Compose(
             [
-                Resize(
-                    height=height,
-                    width=width,
-                    interpolation=cv2.INTER_LANCZOS4
-                ),
+                #Resize(
+                #    height=height,
+                #    width=width,
+                #    interpolation=cv2.INTER_LANCZOS4
+                #),
                 Normalize(),
                 ToTensorV2()
             ]

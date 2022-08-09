@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 
 from typing import List, Union, Tuple
-from .tom import DecodeBlock, CenterBlock
+from .decoder_modules import DecodeBlock, CenterBlock
 
 
 class UNetDecoder(nn.Module):

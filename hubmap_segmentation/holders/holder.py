@@ -41,6 +41,9 @@ class ModelHolder(pl.LightningModule):
     ):
         super(ModelHolder, self).__init__()
         self._config = deepcopy(config)
+
+        self._num_classes = config['model_cfg']['num_classes']
+
         self.segmentor: torch.nn.Module = create_model(config['model_cfg'])
 
         tiling_height = config['holder_cfg']['tiling_height']
@@ -117,7 +120,7 @@ class ModelHolder(pl.LightningModule):
                     stage=stage
                 )
                 for k, v in dct.items():
-                    self.log('{}_batch/{}'.format(k, stage), v, prog_bar=True)
+                    self.log('{}_batch/{}'.format(k, stage), v, prog_bar=True, sync_dist=True)
                 preds.update(dct)
         return preds
 
@@ -140,7 +143,7 @@ class ModelHolder(pl.LightningModule):
             metric = self.__getattr__(metric_name)
             res_metric = metric.compute_every()
             for k, v in res_metric.items():
-                self.log(k, v, prog_bar=True)
+                self.log(k, v, prog_bar=True, sync_dist=True)
             metric.reset()
         self.log_and_reset_losses()
 
@@ -152,7 +155,7 @@ class ModelHolder(pl.LightningModule):
                     continue
                 dct = loss.compute_loader_and_name(stage)
                 for k, v in dct.items():
-                    self.log(k, v, prog_bar=True)
+                    self.log(k, v, prog_bar=True, sync_dist=True)
             loss.reset()
 
     def _forward_impl(
@@ -192,19 +195,17 @@ class ModelHolder(pl.LightningModule):
         if 'full_image' in additional_info:
             input_x = additional_info['full_image']
 
+        channels = self._num_classes
         h, w = input_x.shape[2:]
 
         shift_h = self.tiling_height - self.tiling_height // 2
         shift_w = self.tiling_width - self.tiling_width // 2
-        weight = torch.zeros((h, w)).to(input_x.device)
-        probs = torch.zeros((h, w)).to(input_x.device)
-        #logits = torch.zeros((h, w)).to(input_x.device)
 
-        h_cnt = (h - 1) // shift_h + 1
-        w_cnt = (w - 1) // shift_w + 1
+        weight = torch.zeros((channels, h, w)).to(input_x.device)
+        probs = torch.zeros((channels, h, w)).to(input_x.device)
 
-        shift_h = (h - 1) // h_cnt + 1
-        shift_w = (w - 1) // w_cnt + 1
+        h_cnt = max(0, h - self.tiling_height + shift_h - 1) // shift_h + 1
+        w_cnt = max(0, w - self.tiling_width + shift_w - 1) // shift_w + 1
 
         #print(h_cnt, w_cnt, shift_h, shift_w, h, w, flush=True)
 
@@ -217,15 +218,13 @@ class ModelHolder(pl.LightningModule):
 
                 weight[h_left:h_right, w_left:w_right] += 1
                 input_window = input_x[:, :, h_left:h_right, w_left:w_right]
+
                 preds = self._forward(input_window, additional_info)
-                window_probs = preds['probs'][0, 0]
-                #window_logits = preds['logits'][0, 0]
-                probs[h_left:h_right, w_left:w_right] += window_probs
-                #logits[h_left:h_right, w_left:w_right] += window_logits
-        #logits = (logits / weight)[None, None]
-        probs = (probs / weight)[None, None]
+                # [1, C, T_H, T_W]
+                window_probs = preds['probs'][0] # [C; T_H; T_W]
+                probs[:, h_left:h_right, w_left:w_right] += window_probs
+        probs = (probs / weight)[None]
         return {
             "probs": probs
-            #"probs": torch.sigmoid(logits)
         }
 

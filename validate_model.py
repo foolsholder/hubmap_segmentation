@@ -7,8 +7,8 @@ from hubmap_segmentation.sdataset import create_loader
 
 config = {
     'model_cfg': {
-        'type': 'swin',
-        'size': 'small',
+        'type': 'effnet',
+        #'size': 'small',
         'load_weights': ''
     },
     "holder_cfg": {
@@ -60,7 +60,7 @@ model_holder = EnsembleDifferent(
     ckpt_path_list=[
         os.path.join(
             os.environ['SHUBMAP_EXPS'],
-            'scaled_1024_512',
+            'scaled_fbce+sdice_effnet_adamw_512_T4_F0_SA',
             'epoch.ckpt'
         )
     ],

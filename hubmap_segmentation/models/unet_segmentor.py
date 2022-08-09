@@ -2,36 +2,67 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from .backbone import SwinTransformerV1, LayerNorm2d
-from ..unet_decoder import UNetDecoder
+
+from typing import Dict, Any, List, Optional, Tuple, Sequence, Union
+from .swin_v1.backbone import create_swin_v1
+from .effnet.backbone import create_effnet
+from .unet_decoder import UNetDecoder
 
 
-class SwinUnetNet(nn.Module):
+avaliable_backbones = {
+    'swin': create_swin_v1,
+    'effnet': create_effnet
+}
+
+backboned_unet_args = {
+    'swin': {
+        'encoder_out' : [96, 192, 384, 768],
+        'decoder_out' : [256, 256, 128, 128],
+        'upsamples' : [True, True, True, True][::-1],
+        'center_channels' : 256,
+        'last_channels' : 64
+    },
+    'effnet': {
+        'encoder_out' : [24, 48, 80, 160, 176, 304, 512],
+        'decoder_out' : [512, 320, 176, 160, 120, 90, 64],
+        'upsamples' : [False, True, True, True, False, True, False][::-1],
+        'center_channels' : 256,
+        'last_channels' : 64
+    }
+}
+
+
+def create_backbone(backbone_cfg: Dict[str, Any]):
+    type_bb = backbone_cfg.pop('type')
+    return avaliable_backbones[type_bb](**backbone_cfg), \
+            backboned_unet_args[type_bb]
+
+
+class UNetSegmentor(nn.Module):
     def __init__(
         self,
-        size: str = 'tiny',
+        backbone_cfg: Dict[str, Any],
         use_aux_head: bool = False,
         num_classes: int = 1
     ):
-        super(SwinUnetNet, self).__init__()
-        depths = [2, 2, 6, 2]
-        if size == 'small':
-            depths = [2, 2, 18, 2]
-        self.encoder = SwinTransformerV1(depths=depths)
+        super(UNetSegmentor, self).__init__()
+        self.encoder, unet_args = create_backbone(backbone_cfg)
 
-        encoder_dim = [96, 192, 384, 768]
-        decoder_out = [256, 256, 128, 128]
-        upsamples = [True, True, True, True][::-1]
-        center_channels = 256
-        last_channels = 64
+        encoder_out = unet_args['encoder_out']
+        decoder_out = unet_args['decoder_out']
+        upsamples = unet_args['upsamples']
+        center_channels = unet_args['center_channels']
+        last_channels = unet_args['last_channels']
+
         self.decoder = UNetDecoder(
-            in_dim=encoder_dim,
+            in_dim=encoder_out,
+                    #  C +  C +   C + C  + C  + C +  C <-
             decoder_out_channels=decoder_out,
+            #scale_factors=[2, 2, 2, 2, 1, 2, 1],
             upsamples=upsamples,
             center_channels=center_channels,
             last_channels=last_channels
         )
-
         self.final_conv = nn.Sequential(
             nn.Conv2d(
                 last_channels,
@@ -70,10 +101,9 @@ class SwinUnetNet(nn.Module):
             "logits": logits,
             "probs": torch.sigmoid(logits)
         }
-
         if self.use_aux_head:
             aux_logits = self.aux_head(decoder_feats[-1])
-            aux_logits = F.upsample(
+            aux_logits = F.interpolate(
                 aux_logits,
                 size=logits.shape[2:],
                 mode='bilinear',
@@ -84,29 +114,3 @@ class SwinUnetNet(nn.Module):
                 "aux_probs": torch.sigmoid(aux_logits)
             })
         return res
-
-
-def create_swin_upernet(
-        load_weights: str = '',
-        size: str = 'tiny',
-        use_aux_head: bool = False,
-        num_classes: int = 1
-    ):
-    model = SwinUnetNet(
-        size=size,
-        use_aux_head=use_aux_head,
-        num_classes=num_classes
-    )
-    if load_weights == 'frog':
-        import os
-        model.encoder.load_state_dict(
-            torch.load(
-                os.path.join(
-                    os.environ['PRETRAINED'],
-                    'swin_{}_patch4_window7_224_22k.pth'.format(size)
-                ),
-                map_location='cpu'
-            )['model'],
-            strict=False
-        )
-    return model

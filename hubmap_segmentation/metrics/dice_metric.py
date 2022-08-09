@@ -24,9 +24,17 @@ class Dice(Metric):
             preds: Dict[str, torch.Tensor],
             batch: Dict[str, torch.Tensor]
     ):
-        probs = preds['probs'] # 512x512
-        target = batch['full_target']
+        probs = preds['probs'] # ON VALID PROBS ALREADY FULL_SHAPE_TENSOR
+        target = batch['full_target'] # ALWAYS 1x3000x3000
         probs = F.interpolate(probs, size=target.shape[-2:], mode='bicubic') # -> FULL_RESOLUTION
+
+        if probs.shape[1] != 1:
+            organ_id = batch['organ_id'][0].cpu().item()
+            probs = probs[:, organ_id:organ_id+1]
+            #target = target[:, organ_id:organ_id+1]
+
+        # images [1, 1, H, W]
+
         batch_size = probs.shape[0]
         probs = (probs >= self.thr).view(batch_size, -1).float()
         target = (target > 0.).view(batch_size, -1).float()

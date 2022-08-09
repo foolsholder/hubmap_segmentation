@@ -579,3 +579,26 @@ class SwinTransformerV1(nn.Module):
             outs.append(out)
 
         return outs
+
+
+def create_swin_v1(
+        load_weights: str = '',
+        size: str = 'tiny',
+    ):
+    depths = [2, 2, 6, 2]
+    if size == 'small':
+        depths = [2, 2, 18, 2]
+    model = SwinTransformerV1(depths=depths)
+    if load_weights == 'frog':
+        import os
+        model.load_state_dict(
+            torch.load(
+                os.path.join(
+                    os.environ['PRETRAINED'],
+                    'swin_{}_patch4_window7_224_22k.pth'.format(size)
+                ),
+                map_location='cpu'
+            )['model'],
+            strict=False
+        )
+    return model

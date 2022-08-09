@@ -1,8 +1,12 @@
 {
   "model_cfg": {
-    "type": "effnet",
+    "backbone_cfg": {
+      "type": "swin",
+      "size": "small",
+      "load_weights": "frog"
+    },
     "use_aux_head": true,
-    "load_weights": "imagenet"
+    "num_classes": 6
   },
   "holder_cfg": {
     "tiling_height": 512,
@@ -28,9 +32,9 @@
     }
   },
   "wandb_cfg": {
-    "project": "hubmap",
+    "project": "hubmap_experimental",
     "entity": "dreamtigers",
-    "name": "scaled_fbce+sdice_effnet_adamw_512_T4_F0_SA"
+    "name": "scaled_fbce+sdice_effnet_adamw_512_{}{}_F{}_SA"
   },
   "train_loader": {
     "train": true,
@@ -38,7 +42,7 @@
     "num_workers": 8,
     "height": 512,
     "width": 512,
-    "fold": 0
+    "num_classes": 6
   },
   "valid_loader": {
     "train": false,
@@ -46,7 +50,7 @@
     "num_workers": 4,
     "height": 512,
     "width": 512,
-    "fold": 0
+    "num_classes": 6
   },
   "losses": {
     "weights": [1.0, 10.0],
@@ -58,8 +62,8 @@
   },
   "seed": 3496295,
   "strategy": "ddp",
-  "gpus": 4,
   "num_nodes": 1,
   "log_every_n_steps": 1,
   "gradient_clip_val": 5.0
 }
+

@@ -48,7 +48,7 @@ class TTAHolder(ModelHolder):
         # [T, 3, H, W]
 
         preds = self._forward_impl(batch_input, additional_info)
-        # [T, 1, H, W]
+        # [T, C, H, W]
 
         idx_preds = 1
         for type_aug, args_aug in idx_tta:
@@ -59,13 +59,10 @@ class TTAHolder(ModelHolder):
                 x = torch.transpose(x, dim0=2, dim1=3)
             elif type_aug == 'rotate90':
                 x = torch.rot90(x, k=4-args_aug, dims=[2, 3])
-            #x = F.interpolate(x, self._shape, mode='bicubic')
             preds['probs'][idx_preds:idx_preds+1] = x
             idx_preds += 1
-        #preds['logits'] = torch.mean(preds['logits'], dim=0, keepdim=True)
-        #preds['probs'] = torch.sigmoid(preds['logits'])
         preds['probs'] = torch.mean(preds['probs'], dim=0, keepdim=True)
-        # [1, 1, H, W]
+        # [1, C, H, W]
         return preds
 
 
@@ -121,17 +118,15 @@ class EnsembleHolder(TTAHolder):
             self.segmentor.load_state_dict(st, strict=False)
             # [T, 3, H, W]
             preds_tmp = super(EnsembleHolder, self)._forward_impl(input_x, additional_info=additional_info)
-            tensor = preds_tmp['probs'] * w[idx]
+            tensor = preds_tmp['probs'] * w[idx] # [TTA_CNT; CHANNELS; H; W]
             if probs is None:
                 probs = tensor
             else:
                 probs += tensor
-        #probs = torch.cat(probs, dim=0)
-        # [T; 1; H, W]
+        # [T; C; H, W]
         probs /= w_sum
         preds = {
             'probs': probs,
-            #'probs': torch.sigmoid(logits)
         }
         return preds
 

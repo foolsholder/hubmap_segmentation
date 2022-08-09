@@ -1,3 +1,1 @@
-from .effnet import *
-from .tom import *
-from .utils import *
+from .utils import create_model
