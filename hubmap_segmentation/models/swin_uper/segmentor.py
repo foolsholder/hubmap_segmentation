@@ -3,17 +3,17 @@ from torch import nn
 from torch.nn import functional as F
 
 from .backbone import SwinTransformerV1, LayerNorm2d
-from .decoder import UPerDecoder
+from ..unet_decoder import UNetDecoder
 
 
-class SwinUperNet(nn.Module):
+class SwinUnetNet(nn.Module):
     def __init__(
         self,
         size: str = 'tiny',
         use_aux_head: bool = False,
         num_classes: int = 1
     ):
-        super(SwinUperNet, self).__init__()
+        super(SwinUnetNet, self).__init__()
         depths = [2, 2, 6, 2]
         if size == 'small':
             depths = [2, 2, 18, 2]
@@ -21,11 +21,13 @@ class SwinUperNet(nn.Module):
 
         encoder_dim = [96, 192, 384, 768]
         decoder_out = [256, 256, 128, 128]
+        upsamples = [True, True, True, True][::-1]
         center_channels = 256
         last_channels = 64
-        self.decoder = UPerDecoder(
+        self.decoder = UNetDecoder(
             in_dim=encoder_dim,
             decoder_out_channels=decoder_out,
+            upsamples=upsamples,
             center_channels=center_channels,
             last_channels=last_channels
         )
@@ -90,7 +92,7 @@ def create_swin_upernet(
         use_aux_head: bool = False,
         num_classes: int = 1
     ):
-    model = SwinUperNet(
+    model = SwinUnetNet(
         size=size,
         use_aux_head=use_aux_head,
         num_classes=num_classes

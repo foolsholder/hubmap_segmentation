@@ -5,36 +5,41 @@
     "use_aux_head": true,
     "load_weights": "frog"
   },
-  "max_epochs": 300,
+  "holder_cfg": {
+    "tiling_height": 512,
+    "tiling_width": 512,
+    "use_tiling_inf": true
+  },
+  "max_epochs": 150,
   "opt_sched": {
     "opt": {
       "type": "AdamW",
-      "lr": 3e-4,
-      "weight_decay": 1e-3,
+      "lr": 1e-3,
+      "weight_decay": 5e-2,
       "betas": [0.9, 0.999],
       "eps": 1e-8
     },
     "sched": {
       "type": "LinearWarmupCosineAnnealingLR",
-      "warmup_epochs": 1500,
+      "warmup_epochs": 1000,
       "max_epochs": -1,
       "warmup_start_lr": 1e-8,
-      "eta_min": 3e-4,
+      "eta_min": 1e-3,
       "interval": "step"
     }
   },
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "fbce+sdice_swinS_frog_adamw_512_V4_F2_SA"
+    "name": "scaled_fbce+sdice_swinS_frog_adamw_512_V4_F1_FA"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 8,
+    "batch_size": 4,
     "num_workers": 8,
     "height": 512,
     "width": 512,
-    "fold": 2
+    "fold": 1
   },
   "valid_loader": {
     "train": false,
@@ -42,13 +47,13 @@
     "num_workers": 4,
     "height": 512,
     "width": 512,
-    "fold": 2
+    "fold": 1
   },
   "losses": {
-    "weights": [1.0, 1.0],
+    "weights": [1.0, 10.0],
     "names": [
-        "bce",
-        "sigmoid_soft_dice"
+        "sigmoid_soft_dice",
+        "binary_focal_loss"
     ],
     "aux": 0.4
   },
@@ -57,5 +62,5 @@
   "gpus": 4,
   "num_nodes": 1,
   "log_every_n_steps": 1,
-  "gradient_clip_val": 1.0
+  "gradient_clip_val": 5.0
 }

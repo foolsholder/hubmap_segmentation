@@ -1,40 +1,44 @@
 {
   "model_cfg": {
-    "type": "swin",
-    "size": "small",
+    "type": "effnet",
     "use_aux_head": true,
-    "load_weights": "frog"
+    "load_weights": "imagenet"
   },
-  "max_epochs": 300,
+  "holder_cfg": {
+    "tiling_height": 512,
+    "tiling_width": 512,
+    "use_tiling_inf": true
+  },
+  "max_epochs": 150,
   "opt_sched": {
     "opt": {
-      "type": "RAdam",
-      "lr": 3e-4,
-      "weight_decay": 1e-3,
+      "type": "AdamW",
+      "lr": 1e-3,
+      "weight_decay": 5e-2,
       "betas": [0.9, 0.999],
       "eps": 1e-8
     },
     "sched": {
       "type": "LinearWarmupCosineAnnealingLR",
-      "warmup_epochs": 1500,
+      "warmup_epochs": 1000,
       "max_epochs": -1,
       "warmup_start_lr": 1e-8,
-      "eta_min": 3e-4,
+      "eta_min": 1e-3,
       "interval": "step"
     }
   },
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "fbce+sdice_swinS_frog_adamw_512_V4_F1_SA"
+    "name": "scaled_bce_effnet_adamw_512_A1_F0_FA"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 8,
-    "num_workers": 8,
+    "batch_size": 16,
+    "num_workers": 12,
     "height": 512,
     "width": 512,
-    "fold": 1
+    "fold": 0
   },
   "valid_loader": {
     "train": false,
@@ -42,20 +46,19 @@
     "num_workers": 4,
     "height": 512,
     "width": 512,
-    "fold": 1
+    "fold": 0
   },
   "losses": {
-    "weights": [1.0, 1.0],
+    "weights": [1.0],
     "names": [
-        "bce",
-        "sigmoid_soft_dice"
+        "bce"
     ],
     "aux": 0.4
   },
   "seed": 3496295,
   "strategy": "ddp",
-  "gpus": 4,
+  "gpus": 1,
   "num_nodes": 1,
   "log_every_n_steps": 1,
-  "gradient_clip_val": 1.0
+  "gradient_clip_val": 5.0
 }

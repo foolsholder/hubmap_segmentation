@@ -65,7 +65,7 @@ class SDataset(Dataset):
         self.augs = augs
 
     def __len__(self) -> int:
-        return len(self.df) * (20 if self.train else 1)
+        return len(self.df) * (5 if self.train else 1)
 
     def __getitem__(
             self,

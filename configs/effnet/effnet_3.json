@@ -1,9 +1,8 @@
 {
   "model_cfg": {
-    "type": "swin",
-    "size": "small",
+    "type": "effnet",
     "use_aux_head": true,
-    "load_weights": "frog"
+    "load_weights": "imagenet"
   },
   "holder_cfg": {
     "tiling_height": 512,
@@ -31,7 +30,7 @@
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "scaled_fbce+sdice_swinS_frog_adamw_512_V4_F0_SA"
+    "name": "scaled_fbce+sdice_effnet_adamw_512_T4_F3_SA"
   },
   "train_loader": {
     "train": true,
@@ -39,7 +38,7 @@
     "num_workers": 8,
     "height": 512,
     "width": 512,
-    "fold": 0
+    "fold": 3
   },
   "valid_loader": {
     "train": false,
@@ -47,7 +46,7 @@
     "num_workers": 4,
     "height": 512,
     "width": 512,
-    "fold": 0
+    "fold": 3
   },
   "losses": {
     "weights": [1.0, 10.0],

@@ -2,7 +2,7 @@ import pytorch_lightning as pl
 import os
 import torch
 
-from hubmap_segmentation.holders import EnsembleHolder
+from hubmap_segmentation.holders import EnsembleDifferent, EnsembleHolder
 from hubmap_segmentation.sdataset import create_loader
 
 config = {
@@ -28,25 +28,47 @@ if False:
 else:
     weights = None
 
-model_holder = EnsembleHolder(
+if False:
+    effnet_holder = EnsembleHolder(
+        config={
+            'model_cfg': {
+                'type': 'effnet',
+                'load_weights': ''
+            },
+            "holder_cfg": {
+                "tiling_height": 512,
+                "tiling_width": 512,
+                "use_tiling_inf": True
+            },
+        },
+        ckpt_path_list=[
+            os.path.join(
+                os.environ['SHUBMAP_EXPS'],
+                'scaled_1024_512',
+                'epoch_effnet.ckpt'
+            )
+        ],
+        weights=None,
+        tta_list=[('flip', [-2])]
+    )
+    aux_holders = (effnet_holder,)
+else:
+    aux_holders = tuple()
+
+model_holder = EnsembleDifferent(
     config=config,
     ckpt_path_list=[
         os.path.join(
             os.environ['SHUBMAP_EXPS'],
-            '1024',
+            'scaled_1024_512',
             'epoch.ckpt'
         )
     ],
     weights=weights,
     tta_list=[
-        ('flip', [-1]),
         ('flip', [-2]),
-        ('flip', [-1, -2]),
-        ('transpose', None),
-        ('rotate90', 1),
-        ('rotate90', 2),
-        ('rotate90', 3),
-    ]
+    ],
+    yet_another_holders=aux_holders
 )
 
 trainer = pl.Trainer(
@@ -66,4 +88,12 @@ trainer.validate(
     )
 )
 
-print('Max memory allocated {:.2f} MB'.format(torch.cuda.max_memory_allocated('cuda:0') / 1024./ 1024.))
+print('Max memory allocated {:.2f} MB'.format(
+    torch.cuda.max_memory_allocated('cuda:0') / 1024./ 1024.
+))
+        #('flip', [-1]),
+        #('flip', [-1, -2]),
+        #('transpose', None),
+        #('rotate90', 1),
+        #('rotate90', 2),
+        #('rotate90', 3),

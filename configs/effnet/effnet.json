@@ -28,13 +28,13 @@
     }
   },
   "wandb_cfg": {
-    "project": "hubmap_experimental",
+    "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "scaled_fbce+sdice_effnet_adamw_512_T2_F0_SA"
+    "name": "scaled_fbce+sdice_effnet_adamw_512_T4_F0_SA"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 8,
+    "batch_size": 4,
     "num_workers": 8,
     "height": 512,
     "width": 512,
@@ -58,7 +58,7 @@
   },
   "seed": 3496295,
   "strategy": "ddp",
-  "gpus": 2,
+  "gpus": 4,
   "num_nodes": 1,
   "log_every_n_steps": 1,
   "gradient_clip_val": 5.0

@@ -88,7 +88,6 @@ class EfficientNetSegmentor(nn.Module):
             "logits": logits,
             "probs": torch.sigmoid(logits)
         }
-
         if self.use_aux_head:
             aux_logits = self.aux_head(decoder_feats[-1])
             aux_logits = F.upsample(

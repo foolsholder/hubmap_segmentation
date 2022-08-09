@@ -4,7 +4,8 @@ from torch.nn import functional as F
 
 import numpy as np
 
-from typing import Dict, List, Union, Tuple, Optional, Any
+from copy import copy
+from typing import Dict, List, Union, Tuple, Optional, Any, Sequence
 
 from .holder import ModelHolder
 
@@ -103,7 +104,6 @@ class EnsembleHolder(TTAHolder):
             input_x: torch.Tensor,
             additional_info: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        probs = []
         if additional_info is not None:
             # batch_size == 1 or same augmented organ
             organ_id = additional_info['organ_id'][0].item()
@@ -116,17 +116,57 @@ class EnsembleHolder(TTAHolder):
             w = self._weights[:, organ_id]
         w_sum = np.sum(w)
 
+        probs: Optional[torch.Tensor] = None
         for idx, st in enumerate(self.state_dicts):
             self.segmentor.load_state_dict(st, strict=False)
             # [T, 3, H, W]
             preds_tmp = super(EnsembleHolder, self)._forward_impl(input_x, additional_info=additional_info)
             tensor = preds_tmp['probs'] * w[idx]
-            probs += [tensor[None]]
-        probs = torch.cat(probs, dim=0)
-        # [M; T; 1; H, W]
-        probs = torch.sum(probs, dim=0, keepdim=False) / w_sum
+            if probs is None:
+                probs = tensor
+            else:
+                probs += tensor
+        #probs = torch.cat(probs, dim=0)
+        # [T; 1; H, W]
+        probs /= w_sum
         preds = {
             'probs': probs,
             #'probs': torch.sigmoid(logits)
         }
         return preds
+
+
+class EnsembleDifferent(EnsembleHolder):
+    def __init__(
+            self,
+            yet_another_holders: Sequence[ModelHolder] = tuple(),
+            **kwargs
+    ):
+        super(EnsembleDifferent, self).__init__(**kwargs)
+        self.holder_names = []
+        for idx, holder in enumerate(yet_another_holders):
+            name = 'holder_{}'.format(idx + 1)
+            self.__setattr__(name, holder)
+            self.holder_names += [name]
+
+    def _forward_impl(
+            self,
+            input_x: torch.Tensor,
+            additional_info: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        preds = super(EnsembleDifferent, self)._forward_impl(
+            input_x,
+            copy(additional_info)
+        )
+        #print(preds['probs'].shape, flush=True)
+        for holder_name in self.holder_names:
+            holder: ModelHolder = getattr(self, holder_name)
+            preds_tmp = holder._forward_impl(
+                input_x,
+                copy(additional_info)
+            )
+            #print('hah', preds_tmp['probs'].shape, flush=True)
+            preds['probs'] += preds_tmp['probs']
+        preds['probs'] /= 1 + len(self.holder_names)
+        return preds
+

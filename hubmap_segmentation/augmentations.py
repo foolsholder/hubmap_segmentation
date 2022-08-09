@@ -45,75 +45,48 @@ def get_simple_augmentations(
                     width=width,
                     always_apply=True
                 ), # 1024x1024 -> 512x512
-                OneOf([
-                    Compose(
-                        [
-                            RandomResizedCrop(
-                                height=height//2,
-                                width=width//2,
-                                scale=(0.45, 0.55),
-                                interpolation=cv2.INTER_LANCZOS4,
-                                always_apply=True
-                            ),
-                            PadIfNeeded(
-                                min_height=height,
-                                min_width=width,
-                                always_apply=True
-                            )
-                        ],
-                        p=0.5
-                    ),
-                    CoarseDropout(max_holes=2,
-                              max_height=height//4, max_width=width//4,
-                              min_holes=1,
-                              min_height=height//16, min_width=width//16,
-                              fill_value=0, mask_fill_value=0, p=0.5),
-                    ],
-                    p=0.5
-                ),
                 RandomRotate90(p=0.5),
                 VerticalFlip(p=0.5),
                 HorizontalFlip(p=0.5),
                 Transpose(p=0.5),
 
-                ShiftScaleRotate(shift_limit=0, scale_limit=0.01,
+                ShiftScaleRotate(shift_limit=0, scale_limit=0.1,
                                  rotate_limit=(-45,45),
                                  interpolation=cv2.INTER_LANCZOS4,
                                  border_mode=0, p=0.5),
 
-
                 #RandStainNA(p=1.0),
 
                 # NEW
-                OneOf(
-                    [
-                        GaussianBlur(blur_limit=(13,17), p=0.5),
-                        GaussNoise(var_limit=(25, 30), p=0.5)
-                    ],
-                    p=0.5
-                ),
-                ChannelShuffle(p=0.5),
                 OpticalDistortion(
                     p=0.5,
                     interpolation=cv2.INTER_LANCZOS4
                 ),
-                Affine(
-                    p=0.5,
-                    interpolation=cv2.INTER_LANCZOS4
-                ),
+                #Affine(
+                #    p=0.5,
+                #    interpolation=cv2.INTER_LANCZOS4
+                #),
                 #Color
                 OneOf(
                     [
-                        CLAHE(p=0.5), #NEW
-                        RGBShift(p=0.5),
-                        RandomGamma(p=0.5),
-                        RandomBrightnessContrast(brightness_limit=0.35, contrast_limit=0.5,
-                                                 brightness_by_max=True,p=0.5),
-                        HueSaturationValue(hue_shift_limit=30, sat_shift_limit=30,
-                                           val_shift_limit=20, p=0.5),
+                        GaussianBlur(blur_limit=(7, 19), p=0.5),
+                        GaussNoise(var_limit=30, p=0.5),
                     ],
-                    p=0.875
+                    p=0.5,
                 ),
+                OneOf([
+                    ToGray(p=0.5),
+                    ChannelShuffle(p=0.5),
+                    ],
+                    p=0.75
+                ),
+                CLAHE(p=0.5), #NEW
+                RGBShift(p=0.5),
+                RandomGamma(p=0.5),
+                RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.4,
+                                         brightness_by_max=True,p=0.5),
+                HueSaturationValue(hue_shift_limit=40, sat_shift_limit=40,
+                                   val_shift_limit=25, p=0.5),
                 Normalize(),
                 ToTensorV2()
             ]

@@ -1,1 +1,1 @@
-from .segmentor import SwinUperNet, create_swin_upernet
+from .segmentor import SwinUnetNet, create_swin_upernet

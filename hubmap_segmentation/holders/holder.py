@@ -148,6 +148,8 @@ class ModelHolder(pl.LightningModule):
         for loss_name in self.losses_names:
             loss = self.__getattr__(loss_name)
             for stage in self._stages_names:
+                if stage == 'valid':
+                    continue
                 dct = loss.compute_loader_and_name(stage)
                 for k, v in dct.items():
                     self.log(k, v, prog_bar=True)
@@ -192,8 +194,8 @@ class ModelHolder(pl.LightningModule):
 
         h, w = input_x.shape[2:]
 
-        shift_h = self.tiling_height - self.tiling_height // 5
-        shift_w = self.tiling_width - self.tiling_width // 5
+        shift_h = self.tiling_height - self.tiling_height // 2
+        shift_w = self.tiling_width - self.tiling_width // 2
         weight = torch.zeros((h, w)).to(input_x.device)
         probs = torch.zeros((h, w)).to(input_x.device)
         #logits = torch.zeros((h, w)).to(input_x.device)
