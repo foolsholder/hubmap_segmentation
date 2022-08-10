@@ -30,7 +30,8 @@ class Dice(Metric):
 
         if probs.shape[1] != 1:
             organ_id = batch['organ_id'][0].cpu().item()
-            probs = probs[:, organ_id:organ_id+1]
+            #probs = probs[:, organ_id:organ_id+1]
+            probs = (torch.argmax(probs, dim=1, keepdim=True) == organ_id).long()
             #target = target[:, organ_id:organ_id+1]
 
         # images [1, 1, H, W]

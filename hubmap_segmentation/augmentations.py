@@ -2,11 +2,8 @@ import albumentations as A
 import cv2
 
 from albumentations import (
-    Resize,
-    Normalize,
-    Compose, Transpose,
-    HorizontalFlip,
-    VerticalFlip, Rotate, RandomRotate90,
+    Resize, Normalize, Compose, Transpose,
+    HorizontalFlip, VerticalFlip, Rotate, RandomRotate90,
     ShiftScaleRotate, ElasticTransform, Affine, PadIfNeeded,
     GridDistortion, RandomSizedCrop, RandomCrop, CenterCrop,
     RandomBrightnessContrast, HueSaturationValue, IAASharpen,
@@ -17,7 +14,7 @@ from albumentations import (
 )
 from albumentations.pytorch import ToTensorV2
 from typing import Union, Dict, Any, Optional
-from .extra_augs import RandStainNA
+from .extra_augs import RandStainNA, UniformNoise
 
 
 def get_norm_tensor_augmentations() -> Compose:
@@ -54,9 +51,8 @@ def get_simple_augmentations(
                 ImageCompression(quality_lower=85, quality_upper=95, p=0.5),
                 # NEW
                 ChannelShuffle(p=0.5),
-
-                CLAHE(p=0.5), #NEW
                 RGBShift(p=0.5),
+                CLAHE(p=0.5), #NEW
                 OneOf([
                     RandomGamma(p=0.5),
                     RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.4,
@@ -66,15 +62,37 @@ def get_simple_augmentations(
                 ),
                 HueSaturationValue(hue_shift_limit=40, sat_shift_limit=40,
                                    val_shift_limit=25, p=0.5),
+
+                #OneOf(
+                #    [
+                #        OpticalDistortion(
+                #            interpolation=cv2.INTER_LANCZOS4,
+                #            p=0.5
+                #        ),
+                #        GridDistortion(
+                #            interpolation=cv2.INTER_LANCZOS4,
+                #            p=0.5
+                #        ),
+          #              ElasticTransform(
+          #                  alpha_affine=15,
+          #                  sigma=1,
+          #                  interpolation=cv2.INTER_LANCZOS4,
+          #                  p=0.5
+          #              ),
+                #    ],
+                #    p=0.5
+                #),
+
                 OneOf(
                     [
-                        GaussianBlur(blur_limit=(7, 19), p=0.5),
-                        GaussNoise(var_limit=30, p=0.5),
+                        GaussianBlur(blur_limit=(7, 19), p=0.35),
+                        GaussNoise(var_limit=30, p=0.5, per_channel=False),
+                        UniformNoise(magnitude=25, p=0.5),
                     ],
                     p=0.5,
                 ),
 
-                ShiftScaleRotate(shift_limit=0, scale_limit=0.25,
+                ShiftScaleRotate(shift_limit=0.05, scale_limit=0.1,
                                  rotate_limit=(-45,45),
                                  interpolation=cv2.INTER_LANCZOS4,
                                  border_mode=0, p=0.5),

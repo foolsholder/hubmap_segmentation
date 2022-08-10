@@ -4,7 +4,9 @@ import torch.nn as nn
 from torch.nn import functional as F
 
 from typing import List, Union, Tuple
-from .decoder_modules import DecodeBlock, CenterBlock
+from .decoder_modules import \
+    DecodeBlock, CenterBlock, \
+    FFCDecodeBlock, FFCCenterBlock
 
 
 class UNetDecoder(nn.Module):
@@ -16,7 +18,7 @@ class UNetDecoder(nn.Module):
         last_channels: int
     ):
         super(UNetDecoder, self).__init__()
-        self.center = CenterBlock(
+        self.center = FFCCenterBlock(
             in_channel=in_dim[-1],
             out_channel=center_channels
         )
@@ -24,7 +26,7 @@ class UNetDecoder(nn.Module):
         self.layers_names = []
         prev = center_channels
         for idx in range(len(decoder_out_channels)):
-            layer = DecodeBlock(
+            layer = FFCDecodeBlock(
                 in_channel=prev + in_dim[-1-idx],
                 out_channel=decoder_out_channels[idx],
                 upsample=upsamples[idx]
@@ -33,7 +35,7 @@ class UNetDecoder(nn.Module):
             layer_name = 'f_{}'.format(idx + 1)
             self.__setattr__(layer_name, layer)
             self.layers_names += [layer_name]
-        self.g = DecodeBlock(
+        self.g = FFCDecodeBlock(
             in_channel=prev,
             out_channel=last_channels,
             upsample=True

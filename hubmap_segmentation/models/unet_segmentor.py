@@ -46,6 +46,7 @@ class UNetSegmentor(nn.Module):
         num_classes: int = 1
     ):
         super(UNetSegmentor, self).__init__()
+        self.num_classes = num_classes
         self.encoder, unet_args = create_backbone(backbone_cfg)
 
         encoder_out = unet_args['encoder_out']
@@ -83,7 +84,7 @@ class UNetSegmentor(nn.Module):
                     last_channels,
                     kernel_size=3,
                     padding=1,
-                    #bias=False
+                    bias=False
                 ),
                 nn.BatchNorm2d(last_channels),
                 nn.ReLU(inplace=True),
@@ -96,10 +97,14 @@ class UNetSegmentor(nn.Module):
         last, decoder_feats = self.decoder(encoder_feats)
 
         logits = self.final_conv(last)
+        if self.num_classes == 1:
+            probs = torch.sigmoid(logits)
+        else:
+            probs = torch.softmax(logits, dim=1)
 
         res = {
             "logits": logits,
-            "probs": torch.sigmoid(logits)
+            "probs": probs
         }
         if self.use_aux_head:
             aux_logits = self.aux_head(decoder_feats[-1])
@@ -109,8 +114,12 @@ class UNetSegmentor(nn.Module):
                 mode='bilinear',
                 align_corners=False
             )
+            if self.num_classes == 1:
+                aux_probs = torch.sigmoid(aux_logits)
+            else:
+                aux_probs = torch.softmax(aux_logits, dim=1)
             res.update({
                 "aux_logits": aux_logits,
-                "aux_probs": torch.sigmoid(aux_logits)
+                "aux_probs": aux_probs
             })
         return res

@@ -7,9 +7,12 @@ from hubmap_segmentation.sdataset import create_loader
 
 config = {
     'model_cfg': {
-        'type': 'effnet',
-        #'size': 'small',
-        'load_weights': ''
+        "backbone_cfg": {
+          "type": "effnet",
+          "load_weights": "imagenet"
+        },
+        "use_aux_head": False,
+        "num_classes": 6
     },
     "holder_cfg": {
         "tiling_height": 512,
@@ -31,15 +34,12 @@ else:
 if False:
     effnet_holder = EnsembleHolder(
         config={
-            'model_cfg': {
-                'type': 'effnet',
-                'load_weights': ''
+            "backbone_cfg": {
+              "type": "effnet",
+              "load_weights": "imagenet"
             },
-            "holder_cfg": {
-                "tiling_height": 512,
-                "tiling_width": 512,
-                "use_tiling_inf": True
-            },
+            "use_aux_head": true,
+            "num_classes": 6
         },
         ckpt_path_list=[
             os.path.join(
@@ -60,13 +60,19 @@ model_holder = EnsembleDifferent(
     ckpt_path_list=[
         os.path.join(
             os.environ['SHUBMAP_EXPS'],
-            'scaled_fbce+sdice_effnet_adamw_512_T4_F0_SA',
-            'epoch.ckpt'
+            'tmp',
+            'epoch_effnet_f0_cat_100.ckpt'
         )
     ],
     weights=weights,
     tta_list=[
         ('flip', [-2]),
+        #('flip', [-1]),
+        #('flip', [-1, -2]),
+        #('transpose', None),
+        ('rotate90', 1),
+        #('rotate90', 2),
+        #('rotate90', 3),
     ],
     yet_another_holders=aux_holders
 )

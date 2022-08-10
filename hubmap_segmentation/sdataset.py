@@ -80,16 +80,18 @@ class SDataset(Dataset):
             image_id + '.npy'
         ))#.astype(np.float32)
         #image = (image / np.max(image) * 255).astype(np.uint8)
-        target = np.load(os.path.join(
+        target = (np.load(os.path.join(
             self.root,
             self.folder_masks,
             image_id + '.npy'
-        ))
+        )) > 0).astype(np.float32)
         aug_dict = self.get_augmented(image=image, mask=target)
         mask = aug_dict['mask'][None]
+        cat_mask = mask.long() * self.organ2id[row['organ']]
         res = {
             "input_x": aug_dict['image'],
             "target": self._to_ohe(mask, self.organ2id[row['organ']]),
+            'cat_target': cat_mask[0],
             'image_id': image_id,
             'organ': row['organ'],
             'organ_id': self.organ2id[row['organ']]

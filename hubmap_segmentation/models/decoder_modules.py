@@ -129,3 +129,78 @@ class DecodeBlock(nn.Module):
         x = F.relu(self.bn_out(x), inplace=True)
 
         return x
+
+
+from .ffc_modules import FFC_BN_ACT, FFCSE_block
+
+
+class FFCDecodeBlock(nn.Module):
+    def __init__(
+            self,
+            in_channel,
+            out_channel,
+            upsample,
+            dilation=1,
+            ratio_gin=0.5,
+            ratio_gout=0.5,
+            lfu=False,
+            use_se=True
+    ):
+        super().__init__()
+        self.upsample = nn.Sequential()
+        if upsample:
+            self.upsample.add_module('upsample',nn.Upsample(scale_factor=2, mode='bilinear'))
+        self.bn_out = nn.BatchNorm2d(out_channel)
+
+        # Both self.conv2 and self.downsample layers downsample the input when
+        # stride != 1
+        self.conv_bn_act1 = FFC_BN_ACT(in_channel, in_channel, kernel_size=3, padding=1,
+                                ratio_gin=ratio_gin, ratio_gout=ratio_gout,
+                                activation_layer=nn.ReLU, enable_lfu=lfu)
+        self.conv_bn_act2 = FFC_BN_ACT(in_channel, out_channel, kernel_size=3,
+                                ratio_gin=ratio_gout, ratio_gout=ratio_gout,
+                                stride=1, padding=1, groups=1,
+                                activation_layer=nn.ReLU, enable_lfu=lfu)
+        self.conv_bn_act3 = FFC_BN_ACT(in_channel, out_channel, kernel_size=1,
+                                ratio_gin=ratio_gout, ratio_gout=ratio_gout, enable_lfu=lfu)
+
+        self.se_block = FFCSE_block(out_channel, ratio_gout) if use_se else nn.Identity()
+
+    def forward(self, inputs):
+        skip_connection = self.upsample(inputs)
+        x = skip_connection
+
+        in_cg = self.conv_bn_act1.ffc.in_cg
+        x_l, x_g = x[:, :-in_cg], x[:, -in_cg:]
+        #print(x_l.shape, x_g.shape, flush=True)
+        x = x_l, x_g
+        skip_connection = x
+
+        x = self.conv_bn_act1(x)
+        x = self.conv_bn_act2(x)
+        x = self.se_block(x)
+
+        x_l, x_r = x
+        sx_l, sx_r = self.conv_bn_act3(skip_connection)
+
+        x = torch.cat([x_l, x_r], dim=1)
+        skip = torch.cat([sx_l, sx_r], dim=1)
+
+        x += skip
+        return x
+
+
+
+
+class FFCCenterBlock(FFCDecodeBlock):
+    def __init__(self,
+                 ratio_gin = 0.75,
+                 ratio_gout = 0.75,
+                 upsample=False,
+                 **kwargs):
+        super(FFCCenterBlock, self).__init__(
+            ratio_gin=ratio_gin,
+            ratio_gout=ratio_gout,
+            upsample=upsample,
+            **kwargs
+        )

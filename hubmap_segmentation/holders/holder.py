@@ -15,8 +15,8 @@ from typing import (
 from hubmap_segmentation.metrics.dice_metric import Dice
 from hubmap_segmentation.losses import (
     BCELoss, SigmoidSoftDiceLoss,
-    LossAggregation, LossMetric,
-    BinaryFocalLoss, TverskyLoss,
+    LossAggregation, CATCELoss, CatSoftDiceLoss,
+    BinaryFocalLoss, TverskyLoss, CatFocalLoss,
     LovaszHingeLoss, SymmetricUnifiedFocalLoss
 )
 from hubmap_segmentation.holders.optimizer_utils import create_opt_shed
@@ -28,7 +28,10 @@ available_losses = {
     'sigmoid_soft_dice': SigmoidSoftDiceLoss,
     'tversky_loss': TverskyLoss,
     'unified_focal_loss': SymmetricUnifiedFocalLoss,
-    'lovasz_hinge_loss': LovaszHingeLoss
+    'lovasz_hinge_loss': LovaszHingeLoss,
+    'cat_soft_dice': CatSoftDiceLoss,
+    'cat_focal_loss': CatFocalLoss,
+    'catce': CATCELoss
 }
 
 
@@ -46,13 +49,13 @@ class ModelHolder(pl.LightningModule):
 
         self.segmentor: torch.nn.Module = create_model(config['model_cfg'])
 
-        tiling_height = config['holder_cfg']['tiling_height']
-        tiling_width = config['holder_cfg']['tiling_width']
-        use_tiling_inf = config['holder_cfg']['use_tiling_inf']
+        tiling_height: int = config['holder_cfg']['tiling_height']
+        tiling_width: int = config['holder_cfg']['tiling_width']
+        use_tiling_inf: bool = config['holder_cfg']['use_tiling_inf']
 
-        self.tiling_height = tiling_height
-        self.tiling_width = tiling_width
-        self.use_tiling_inf = use_tiling_inf
+        self.tiling_height: int = tiling_height
+        self.tiling_width: int = tiling_width
+        self.use_tiling_inf: bool = use_tiling_inf
         metrics = [Dice(thr, smooth)]
         self.metrics_names = []
         for metric in metrics:
@@ -195,14 +198,19 @@ class ModelHolder(pl.LightningModule):
         if 'full_image' in additional_info:
             input_x = additional_info['full_image']
 
+        input_x, (pad_h, pad_w) = self._pad_if_need(input_x)
+
         channels = self._num_classes
         h, w = input_x.shape[2:]
 
         shift_h = self.tiling_height - self.tiling_height // 2
         shift_w = self.tiling_width - self.tiling_width // 2
 
-        weight = torch.zeros((channels, h, w)).to(input_x.device)
+        weight = torch.zeros((1, h, w)).to(input_x.device)
         probs = torch.zeros((channels, h, w)).to(input_x.device)
+
+        # logits
+        # probs
 
         h_cnt = max(0, h - self.tiling_height + shift_h - 1) // shift_h + 1
         w_cnt = max(0, w - self.tiling_width + shift_w - 1) // shift_w + 1
@@ -216,7 +224,7 @@ class ModelHolder(pl.LightningModule):
                 w_right = min(w, shift_w * w_idx + self.tiling_width)
                 w_left = w_right - self.tiling_width
 
-                weight[h_left:h_right, w_left:w_right] += 1
+                weight[:, h_left:h_right, w_left:w_right] += 1
                 input_window = input_x[:, :, h_left:h_right, w_left:w_right]
 
                 preds = self._forward(input_window, additional_info)
@@ -224,7 +232,32 @@ class ModelHolder(pl.LightningModule):
                 window_probs = preds['probs'][0] # [C; T_H; T_W]
                 probs[:, h_left:h_right, w_left:w_right] += window_probs
         probs = (probs / weight)[None]
+        probs = self._delete_pad_if_need(probs, pad_h, pad_w)
         return {
             "probs": probs
         }
 
+    def _pad_if_need(self, input_x: torch.Tensor):
+        h, w = input_x.shape[2:]
+        pad_h = 0
+        pad_w = 0
+        if h < self.tiling_height:
+            pad_h = self.tiling_height - h
+        if w < self.tiling_width:
+            pad_w = self.tiling_width - w
+        input_x = F.pad(input_x, pad=(
+            pad_w // 2,
+            pad_w - pad_w // 2,
+            pad_h // 2,
+            pad_h - pad_h // 2
+        ))
+        return (input_x, (pad_h, pad_w))
+
+    def _delete_pad_if_need(self, input_x: torch.Tensor,
+                            pad_h: int, pad_w: int)  -> torch.Tensor:
+        h, w = input_x.shape[2:]
+        top_h = pad_h // 2
+        bot_h = pad_h - pad_h // 2
+        left_w = pad_w // 2
+        right_w = pad_w - left_w
+        return input_x[:,:, top_h:h-bot_h, left_w:w-right_w]
