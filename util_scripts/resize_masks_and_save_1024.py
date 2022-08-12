@@ -73,12 +73,6 @@ def create_images():
     if not os.path.exists(new_images_path):
         os.makedirs(new_images_path)
 
-    images_full_ref = os.path.join(root, 'full_images')
-    flag = True
-    if not os.path.exists(images_full_ref):
-        os.makedirs(images_full_ref)
-        flag = True
-
     for idx in trange(len(df)):
         row = df.iloc[idx]
         h = row['img_height']

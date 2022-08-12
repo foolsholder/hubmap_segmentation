@@ -33,8 +33,14 @@ config['valid_loader']['fold'] = FOLD
 max_epochs: int = config['max_epochs']
 if 'seed' in config.keys():
     if config['seed']:
-        torch.manual_seed(config['seed'])
-        np.random.seed(config['seed'])
+        seed = config['seed']
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+        import random
+        random.seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)
 
 model_holder = ModelHolder(config)
 wandb_logger = WandbLogger(**config['wandb_cfg'])

@@ -20,6 +20,11 @@ from .extra_augs import RandStainNA, UniformNoise
 def get_norm_tensor_augmentations() -> Compose:
     return Compose(
         [
+            #PadIfNeeded(
+            #    min_height=1024,
+            #    min_width=1024,
+            #    border_mode=0,
+            #),
             Normalize(),
             ToTensorV2()
         ]
@@ -73,29 +78,29 @@ def get_simple_augmentations(
                 #            interpolation=cv2.INTER_LANCZOS4,
                 #            p=0.5
                 #        ),
-          #              ElasticTransform(
-          #                  alpha_affine=15,
-          #                  sigma=1,
-          #                  interpolation=cv2.INTER_LANCZOS4,
-          #                  p=0.5
-          #              ),
+                #ElasticTransform(
+                #    alpha_affine=15,
+                #    sigma=1,
+                #    interpolation=cv2.INTER_LANCZOS4,
+                #    p=0.5
+                #),
                 #    ],
                 #    p=0.5
                 #),
-
-                OneOf(
-                    [
-                        GaussianBlur(blur_limit=(7, 19), p=0.35),
-                        GaussNoise(var_limit=30, p=0.5, per_channel=False),
-                        UniformNoise(magnitude=25, p=0.5),
-                    ],
-                    p=0.5,
-                ),
-
                 ShiftScaleRotate(shift_limit=0.05, scale_limit=0.1,
                                  rotate_limit=(-45,45),
                                  interpolation=cv2.INTER_LANCZOS4,
                                  border_mode=0, p=0.5),
+
+
+                OneOf(
+                    [
+                        GaussianBlur(blur_limit=(7, 19), p=0.35),
+                        GaussNoise(var_limit=30, p=0.5),
+                        #UniformNoise(magnitude=25, p=0.5),
+                    ],
+                    p=0.5,
+                ),
 
 
                 Normalize(),

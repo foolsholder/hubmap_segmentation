@@ -7,6 +7,7 @@ from typing import Dict, Any, List, Optional, Tuple, Sequence, Union
 from .swin_v1.backbone import create_swin_v1
 from .effnet.backbone import create_effnet
 from .unet_decoder import UNetDecoder
+from .decoder_modules import get_timestep_embedding
 
 
 avaliable_backbones = {
@@ -43,7 +44,9 @@ class UNetSegmentor(nn.Module):
         self,
         backbone_cfg: Dict[str, Any],
         use_aux_head: bool = False,
-        num_classes: int = 1
+        ffc_decoder: bool = False,
+        num_classes: int = 1,
+        cls_emb_dim: int = 0
     ):
         super(UNetSegmentor, self).__init__()
         self.num_classes = num_classes
@@ -62,7 +65,9 @@ class UNetSegmentor(nn.Module):
             #scale_factors=[2, 2, 2, 2, 1, 2, 1],
             upsamples=upsamples,
             center_channels=center_channels,
-            last_channels=last_channels
+            last_channels=last_channels,
+            ffc_decoder=ffc_decoder,
+            cls_emb_dim=cls_emb_dim
         )
         self.final_conv = nn.Sequential(
             nn.Conv2d(
@@ -91,10 +96,31 @@ class UNetSegmentor(nn.Module):
                 nn.Conv2d(last_channels, num_classes, kernel_size=1)
             )
 
-    def forward(self, input_x: torch.Tensor):
+        self.cls_emb_dim = cls_emb_dim
+        if self.cls_emb_dim > 0:
+            self.emb_layer = nn.Sequential(
+                nn.Linear(cls_emb_dim, cls_emb_dim * 2),
+                nn.ReLU(inplace=True),
+                nn.Linear(cls_emb_dim * 2, cls_emb_dim),
+                nn.ReLU(inplace=True)
+            )
+
+    def forward(
+            self,
+            input_x: torch.Tensor,
+            additional_info: Dict[str, Any]
+    ) -> Dict[str, Any]:
         x = input_x
         encoder_feats = self.encoder(x)
-        last, decoder_feats = self.decoder(encoder_feats)
+
+        organ_ids = additional_info['organ_id']
+        if self.cls_emb_dim > 0:
+            cls_emb = get_timestep_embedding(organ_ids.float(), self.cls_emb_dim)
+            cls_emb = self.emb_layer(cls_emb)
+        else:
+            cls_emb = None
+
+        last, decoder_feats = self.decoder(encoder_feats, cls_emb)
 
         logits = self.final_conv(last)
         if self.num_classes == 1:

@@ -24,7 +24,6 @@ class EfficientNetV3(nn.Module):
     ) -> None:
         """
         EfficientNet V1 and V2 main class
-
         Args:
             inverted_residual_setting (Sequence[Union[MBConvConfig, FusedMBConvConfig]]): Network structure
             dropout (float): The droupout probability
@@ -110,10 +109,15 @@ class EfficientNetV3(nn.Module):
     def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
         #res: Dict[str,torch.Tensor] = {}
         x = self.input_conv(x)
+        torch.save(x.cpu(), 'input_conv.pth')
         res = []
+        t = 0
         for layer_name in self.layers_names:
             layer = self.__getattr__(layer_name)
             x = layer(x)
+            if t== 0:
+                torch.save(x.cpu(), 'fst_block.pth')
+                t = 1
             #res[layer_name] = x
             res += [x]
         return res

@@ -28,7 +28,7 @@ available_losses = {
     'sigmoid_soft_dice': SigmoidSoftDiceLoss,
     'tversky_loss': TverskyLoss,
     'unified_focal_loss': SymmetricUnifiedFocalLoss,
-    'lovasz_hinge_loss': LovaszHingeLoss,
+    'cat_lovasz': LovaszHingeLoss,
     'cat_soft_dice': CatSoftDiceLoss,
     'cat_focal_loss': CatFocalLoss,
     'catce': CATCELoss
@@ -56,7 +56,9 @@ class ModelHolder(pl.LightningModule):
         self.tiling_height: int = tiling_height
         self.tiling_width: int = tiling_width
         self.use_tiling_inf: bool = use_tiling_inf
+
         metrics = [Dice(thr, smooth)]
+
         self.metrics_names = []
         for metric in metrics:
             self.__setattr__(metric._name, metric)
@@ -166,7 +168,7 @@ class ModelHolder(pl.LightningModule):
             input_x: torch.Tensor,
             additional_info: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        preds = self.segmentor(input_x)
+        preds = self.segmentor(input_x, additional_info)
         return preds
 
     def _forward(
@@ -203,8 +205,8 @@ class ModelHolder(pl.LightningModule):
         channels = self._num_classes
         h, w = input_x.shape[2:]
 
-        shift_h = self.tiling_height - self.tiling_height // 2
-        shift_w = self.tiling_width - self.tiling_width // 2
+        shift_h = self.tiling_height - self.tiling_height // 5
+        shift_w = self.tiling_width - self.tiling_width // 5
 
         weight = torch.zeros((1, h, w)).to(input_x.device)
         probs = torch.zeros((channels, h, w)).to(input_x.device)
@@ -230,6 +232,7 @@ class ModelHolder(pl.LightningModule):
                 preds = self._forward(input_window, additional_info)
                 # [1, C, T_H, T_W]
                 window_probs = preds['probs'][0] # [C; T_H; T_W]
+
                 probs[:, h_left:h_right, w_left:w_right] += window_probs
         probs = (probs / weight)[None]
         probs = self._delete_pad_if_need(probs, pad_h, pad_w)

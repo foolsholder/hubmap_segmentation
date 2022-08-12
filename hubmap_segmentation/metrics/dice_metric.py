@@ -2,7 +2,7 @@ import torch
 
 import pytorch_lightning as pl
 from torchmetrics import Metric
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 from torch.nn import functional as F
 
 
@@ -13,7 +13,9 @@ class Dice(Metric):
         self.smooth = smooth
         self._name = 'dice'
 
-        for organ in ['lung', 'spleen', 'kidney', 'prostate', 'largeintestine', 'wo_kidney']:
+        all = ['lung', 'spleen', 'kidney', 'prostate', 'largeintestine', 'wo_kidney']
+        self.all = all
+        for organ in all:
             self.add_state('{}_dice'.format(organ), default=torch.tensor(0.), dist_reduce_fx="sum")
             self.add_state('{}_samples'.format(organ), default=torch.tensor(0.), dist_reduce_fx="sum")
         self.add_state("sum_dice", default=torch.tensor(0.), dist_reduce_fx="sum")
@@ -76,7 +78,7 @@ class Dice(Metric):
 
     def compute_every(self) -> Dict[str, torch.Tensor]:
         res = {}
-        for organ in ['lung', 'spleen', 'kidney', 'prostate', 'largeintestine', 'wo_kidney']:
+        for organ in self.all:
             #attr_sum = self.__getattr__('{}_dice'.format(organ))
             #attr_cnt = self.__getattr__('{}_samples'.format(organ))
             #res[self._name + '/' + organ] = attr_sum / attr_cnt

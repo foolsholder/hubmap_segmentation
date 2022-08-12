@@ -18,12 +18,6 @@ class CATCELoss(LossMetric):
     ) -> Tuple[str, torch.Tensor]:
         logits = preds[self.prefix + 'logits']
         target = batch['cat_target']
-
-        # C = 6
-        weights = torch.FloatTensor([
-            0.2, 1., 1., 1., 1., 1.
-        ]).to(logits.device)
-
         name = self._name
-        value = F.cross_entropy(logits, target, weight=weights)
+        value = F.cross_entropy(logits, target)
         return name, value

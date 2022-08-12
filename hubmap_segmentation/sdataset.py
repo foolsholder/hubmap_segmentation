@@ -15,7 +15,7 @@ from albumentations import (
     HorizontalFlip
 )
 from albumentations.pytorch import ToTensorV2
-from typing import Union, Dict, Any, Optional
+from typing import Union, Dict, Any, Optional, List
 from .augmentations import get_simple_augmentations, get_norm_tensor_augmentations
 
 
@@ -40,8 +40,8 @@ class SDataset(Dataset):
         self.data_folder: str = root
         self.root = root
 
-        self.folder_images = 'resized_images/images_scaled_{}'.format(2 * height)
-        self.folder_masks = 'resized_images/masks_scaled_{}'.format(2 * height)
+        self.folder_images = 'resized_images/images_scaled_1024'#.format(2 * height)
+        self.folder_masks = 'resized_images/masks_scaled_1024'#.format(2 * height)
 
         suffix_csv = 'train_{}' if train else 'valid_{}'
         suffix_csv = suffix_csv.format(fold)
@@ -51,17 +51,19 @@ class SDataset(Dataset):
             'csv_files',
             suffix_csv + '.csv'
         ))
+
         #self.df = self.df[self.df.organ != 'kidney']
         self.organ2id = {
             'kidney': 1,
             'largeintestine': 2,
             'lung': 3,
             'prostate': 4,
-            'spleen': 5
+            'spleen': 5,
         }
         if augs is None:
             augs = get_simple_augmentations(train, height=height, width=width)
         self.norm_tensor = get_norm_tensor_augmentations()
+
         self.augs = augs
 
     def __len__(self) -> int:
@@ -139,11 +141,15 @@ def create_loader(
         height: int = 512,
         width: int = 512,
         fold: Optional[int] = None,
-        num_classes: int = 1
+        num_classes: int = 1,
     ) -> DataLoader:
-    dataset = SDataset(train,
-                       height=height, width=width,
-                       fold=fold, num_classes=num_classes)
+    dataset = SDataset(
+        train,
+        height=height,
+        width=width,
+        fold=fold,
+        num_classes=num_classes,
+    )
     return DataLoader(
         dataset,
         batch_size=batch_size,

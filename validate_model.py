@@ -61,7 +61,7 @@ model_holder = EnsembleDifferent(
         os.path.join(
             os.environ['SHUBMAP_EXPS'],
             'tmp',
-            'epoch_effnet_f0_cat_100.ckpt'
+            'epoch_effnet_f0.ckpt'
         )
     ],
     weights=weights,

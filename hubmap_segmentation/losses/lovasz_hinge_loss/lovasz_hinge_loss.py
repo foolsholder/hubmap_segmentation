@@ -4,15 +4,16 @@ import pytorch_lightning as pl
 from ..loss_metric import LossMetric
 from typing import Dict, Any, Tuple
 from torch.nn import functional as F
-from .utils import lovasz_hinge
+from .utils import lovasz_softmax
 
 
 class LovaszHingeLoss(LossMetric):
     def __init__(
             self,
-            loss_name: str = 'lovasz_hinge_loss',
+            loss_name: str = 'cat_lovasz',
+            **kwargs
     ):
-        super().__init__(loss_name=loss_name)
+        super().__init__(loss_name=loss_name, **kwargs)
 
     def batch_loss_and_name(
             self,
@@ -20,9 +21,9 @@ class LovaszHingeLoss(LossMetric):
             batch: Dict[str, torch.Tensor],
             stage: str = 'train'
     ) -> Tuple[str, torch.Tensor]:
-        logits = preds['logits'][:, 0, :, :]
-        target = batch['target'][:, 0, :, :]
+        probs = preds[self.prefix + 'logits'].softmax(dim=1)#[:, 0, :, :]
+        target = batch['cat_target']#[:, 0, :, :]
 
         name = self._name
-        value = lovasz_hinge(logits, target)
+        value = lovasz_softmax(probs, target)
         return name, value

@@ -5,6 +5,8 @@
       "load_weights": "imagenet"
     },
     "use_aux_head": true,
+    "ffc_decoder": false,
+    "cls_emb_dim": 96,
     "num_classes": 6
   },
   "holder_cfg": {
@@ -16,28 +18,28 @@
   "opt_sched": {
     "opt": {
       "type": "AdamW",
-      "lr": 5e-5,
-      "weight_decay": 0,
+      "lr": 1e-4,
+      "weight_decay": 5e-2,
       "betas": [0.9, 0.999],
       "eps": 1e-8
     },
     "sched": {
       "type": "LinearWarmupCosineAnnealingLR",
-      "warmup_epochs": 200,
+      "warmup_epochs": 500,
       "max_epochs": -1,
       "warmup_start_lr": 1e-8,
-      "eta_min": 5e-5,
+      "eta_min": 1e-6,
       "interval": "step"
     }
   },
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "scaled_catce+catsdice_ffc_effnet_adamw_LR-5e-5_512_{}{}_F{}_SA"
+    "name": "cat_ce+sdice_effnet_emb_92_adamw_LR-1e-4_512_1024_{}{}_F{}_SA"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 6,
+    "batch_size": 4,
     "num_workers": 8,
     "height": 512,
     "width": 512,

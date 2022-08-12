@@ -1,9 +1,10 @@
 import torch
 from torch import nn, optim
+import math
 import torch.nn.functional as F
 import sys
 import os
-from typing import Dict
+from typing import Dict, Optional
 
 
 def conv3x3(in_channel, out_channel): #not change resolusion
@@ -83,21 +84,14 @@ class CBAM(nn.Module):
         return x
 
 
-class CenterBlock(nn.Module):
-    def __init__(self, in_channel, out_channel):
-        super().__init__()
-        self.conv = conv3x3(in_channel, out_channel).apply(init_weight)
-        self.bn = nn.BatchNorm2d(out_channel)
-
-    def forward(self, inputs):
-        x = self.conv(inputs)
-        x = self.bn(x)
-        x = F.relu(x, inplace=True)
-        return x
-
-
 class DecodeBlock(nn.Module):
-    def __init__(self, in_channel, out_channel, upsample):
+    def __init__(
+            self,
+            in_channel,
+            out_channel,
+            upsample,
+            cls_emb_dim: int = 0
+    ):
         super().__init__()
         self.upsample = nn.Sequential()
         if upsample:
@@ -112,7 +106,11 @@ class DecodeBlock(nn.Module):
         self.conv1x1   = conv1x1(in_channel, out_channel).apply(init_weight)
         self.bn_out = nn.BatchNorm2d(out_channel)
 
-    def forward(self, inputs):
+        self.cls_emb_dim = cls_emb_dim
+        if cls_emb_dim > 0:
+            self.cls_emb_dense = nn.Linear(cls_emb_dim, out_channel)
+
+    def forward(self, inputs, cls_emb: Optional[torch.Tensor] = None):
         # conv -> bn -> act
         skip_connection = self.upsample(inputs)
 
@@ -121,13 +119,31 @@ class DecodeBlock(nn.Module):
 
         x  = F.relu(self.bn1(self.conv3x3_1(x)), inplace=True)
 
-        x  = self.bn2(self.conv3x3_2(x))
+        x = self.conv3x3_2(x)
+
+        if self.cls_emb_dim > 0:
+            x += self.cls_emb_dense(cls_emb)[:, :, None, None]
+
+        x  = self.bn2(x)
 
         x  = self.cbam(x)
 
         x += self.conv1x1(skip_connection) #shortcut
         x = F.relu(self.bn_out(x), inplace=True)
 
+        return x
+
+
+class CenterBlock(nn.Module):
+    def __init__(self, in_channel, out_channel):
+        super().__init__()
+        self.conv = conv3x3(in_channel, out_channel).apply(init_weight)
+        self.bn = nn.BatchNorm2d(out_channel)
+
+    def forward(self, inputs):
+        x = self.conv(inputs)
+        x = self.bn(x)
+        x = F.relu(x, inplace=True)
         return x
 
 
@@ -143,6 +159,7 @@ class FFCDecodeBlock(nn.Module):
             dilation=1,
             ratio_gin=0.5,
             ratio_gout=0.5,
+            cls_emb_dim: int = 0,
             lfu=False,
             use_se=True
     ):
@@ -166,7 +183,7 @@ class FFCDecodeBlock(nn.Module):
 
         self.se_block = FFCSE_block(out_channel, ratio_gout) if use_se else nn.Identity()
 
-    def forward(self, inputs):
+    def forward(self, inputs, cls_emb: Optional[torch.Tensor] = None):
         skip_connection = self.upsample(inputs)
         x = skip_connection
 
@@ -190,8 +207,6 @@ class FFCDecodeBlock(nn.Module):
         return x
 
 
-
-
 class FFCCenterBlock(FFCDecodeBlock):
     def __init__(self,
                  ratio_gin = 0.75,
@@ -204,3 +219,23 @@ class FFCCenterBlock(FFCDecodeBlock):
             upsample=upsample,
             **kwargs
         )
+
+
+def get_timestep_embedding(timesteps, embedding_dim, max_positions=10000):
+
+    timesteps /= 6.
+
+    assert len(timesteps.shape) == 1  # and timesteps.dtype == tf.int32
+    half_dim = embedding_dim // 2
+    # magic number 10000 is from transformers
+    emb = math.log(max_positions) / (half_dim - 1)
+    # emb = math.log(2.) / (half_dim - 1)
+    emb = torch.exp(torch.arange(half_dim, dtype=torch.float32, device=timesteps.device) * -emb)
+    # emb = tf.range(num_embeddings, dtype=jnp.float32)[:, None] * emb[None, :]
+    # emb = tf.cast(timesteps, dtype=jnp.float32)[:, None] * emb[None, :]
+    emb = timesteps.float()[:, None] * emb[None, :]
+    emb = torch.cat([torch.sin(emb), torch.cos(emb)], dim=1)
+    if embedding_dim % 2 == 1:  # zero pad
+        emb = F.pad(emb, (0, 1), mode='constant')
+    assert emb.shape == (timesteps.shape[0], embedding_dim)
+    return emb
