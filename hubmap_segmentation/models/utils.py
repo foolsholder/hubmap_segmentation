@@ -8,6 +8,7 @@ def create_model(model_cfg: Dict[str, Union[Dict, Any]]):
 
     #return UNetSegmentor(**model_cfg)
     return SegFormer(
+    config = model_cfg,
     in_channels=3,
     widths=[64, 128, 256, 512],
     depths=[3, 4, 6, 3],
@@ -18,5 +19,5 @@ def create_model(model_cfg: Dict[str, Union[Dict, Any]]):
     mlp_expansions=[4, 4, 4, 4],
     decoder_channels=256,
     scale_factors=[8, 4, 2, 1],
-    num_classes=100,
+    num_classes=model_cfg['num_classes'],
 )

@@ -1,4 +1,4 @@
-from decoder_modules import *
+from .decoder_modules import *
 from typing import List, Dict, Any
 import torch.nn.functional as F
 
@@ -36,10 +36,10 @@ class SegFormer(nn.Module):
         self.head = SegFormerSegmentationHead(
             decoder_channels, num_classes, num_features=len(widths)
         )
-        self.num_calsses = num_classes
+        self.num_classes = num_classes
         self.config = config
 
-    def forward(self, x):
+    def forward(self, x, additional_info: Dict[str, Any]):
         features = self.encoder(x)
         features = self.decoder(features[::-1])
         logits = self.head(features)
@@ -50,7 +50,13 @@ class SegFormer(nn.Module):
             probs = torch.softmax(logits, dim=1)
         probs = F.interpolate(
             probs,
-            size=logits.shape[2:]*4,
+            size=[probs.shape[2]*4, probs.shape[3]*4],
+            mode='bilinear',
+            align_corners=False
+        )
+        logits = F.interpolate(
+            logits,
+            size=[logits.shape[2] * 4, logits.shape[3] * 4],
             mode='bilinear',
             align_corners=False
         )

@@ -4,9 +4,9 @@
       "type": "segformer",
       "load_weights": ""
     },
-    "use_aux_head": true,
+    "use_aux_head": false,
     "ffc_decoder": false,
-    "cls_emb_dim": 96,
+    "cls_emb_dim": 0,
     "num_classes": 6
   },
   "holder_cfg": {
@@ -33,14 +33,14 @@
     }
   },
   "wandb_cfg": {
-    "project": "hubmap",
+    "project": "hubmap_experimental",
     "entity": "dreamtigers",
     "name": "catce+catsdice_effnet_emb_96_adamw_LR-5e-5_512_1024_{}{}_F{}_SA"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 4,
-    "num_workers": 8,
+    "batch_size": 22,
+    "num_workers": 16,
     "height": 512,
     "width": 512,
     "num_classes": 6
@@ -58,8 +58,7 @@
     "names": [
         "cat_soft_dice",
         "catce"
-    ],
-    "aux": 0.4
+    ]
   },
   "seed": 3496295,
   "strategy": "ddp",
