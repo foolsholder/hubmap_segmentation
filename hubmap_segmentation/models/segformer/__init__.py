@@ -1,2 +1,2 @@
-from decoder_modules import *
-from segformer import *
+from .decoder_modules import *
+from .segformer import *
