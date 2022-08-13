@@ -2,7 +2,7 @@ import torch
 
 from typing import Dict, Any, Optional, Union
 from .unet_segmentor import UNetSegmentor
-from segformer import SegFormer
+from .segformer import SegFormer
 
 def create_model(model_cfg: Dict[str, Union[Dict, Any]]):
 
