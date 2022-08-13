@@ -34,7 +34,7 @@
   "wandb_cfg": {
     "project": "hubmap_experimental",
     "entity": "dreamtigers",
-    "name": "scaled_fbce+sdice_effnet_adamw_512_{}{}_F{}_SA"
+    "name": "scaled_fbce+sdice_segformer_adamw_512_{}{}_F{}_SA"
   },
   "train_loader": {
     "train": true,
