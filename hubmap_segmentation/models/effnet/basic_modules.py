@@ -15,12 +15,78 @@ from torchvision.models.efficientnet import (
 )
 
 
-"""class MBConvV3(nn.Module):
+class FusedMBConvV3(nn.Module):
+    def __init__(
+        self,
+        cnf: FusedMBConvConfig,
+        stochastic_depth_prob: float,
+        norm_layer: Callable[..., nn.Module],
+        cls_emb_dim: int = 0,
+        dilation: int = 1
+    ) -> None:
+        super().__init__()
+
+        if not (1 <= cnf.stride <= 2):
+            raise ValueError("illegal stride value")
+
+        self.use_res_connect = cnf.stride == 1 and cnf.input_channels == cnf.out_channels
+
+        layers: List[nn.Module] = []
+        activation_layer = nn.SiLU
+
+        expanded_channels = cnf.adjust_channels(cnf.input_channels, cnf.expand_ratio)
+        if expanded_channels != cnf.input_channels:
+            # fused expand
+            layers.append(
+                Conv2dNormActivation(
+                    cnf.input_channels,
+                    expanded_channels,
+                    kernel_size=cnf.kernel,
+                    stride=cnf.stride,
+                    norm_layer=norm_layer,
+                    activation_layer=activation_layer,
+                )
+            )
+
+            # project
+            layers.append(
+                Conv2dNormActivation(
+                    expanded_channels, cnf.out_channels, kernel_size=1, norm_layer=norm_layer, activation_layer=None
+                )
+            )
+        else:
+            layers.append(
+                Conv2dNormActivation(
+                    cnf.input_channels,
+                    cnf.out_channels,
+                    kernel_size=cnf.kernel,
+                    stride=cnf.stride,
+                    norm_layer=norm_layer,
+                    activation_layer=activation_layer,
+                )
+            )
+
+        self.block = nn.Sequential(*layers)
+        self.stochastic_depth = StochasticDepth(stochastic_depth_prob, "row")
+        self.out_channels = cnf.out_channels
+
+    def forward(self, input: Tuple[Tensor, Optional[Tensor]]) -> Tuple[Tensor, Optional[Tensor]]:
+        input, cls_emb = input
+        result = self.block(input)
+        if self.use_res_connect:
+            result = self.stochastic_depth(result)
+            result += input
+        return result, cls_emb
+
+
+class MBConvV3(nn.Module):
     def __init__(
         self,
         cnf: MBConvConfig,
         stochastic_depth_prob: float,
         norm_layer: Callable[..., nn.Module],
+        cls_emb_dim: int = 0,
+        dilation: int = 1,
         se_layer: Callable[..., nn.Module] = SqueezeExcitation,
     ) -> None:
         super().__init__()
@@ -52,7 +118,7 @@ from torchvision.models.efficientnet import (
                 expanded_channels,
                 expanded_channels,
                 kernel_size=cnf.kernel,
-                dilation=1,
+                dilation=dilation,
                 stride=cnf.stride,
                 groups=expanded_channels,
                 norm_layer=norm_layer,
@@ -74,13 +140,25 @@ from torchvision.models.efficientnet import (
         self.block = nn.Sequential(*layers)
         self.stochastic_depth = StochasticDepth(stochastic_depth_prob, "row")
         self.out_channels = cnf.out_channels
+        self.cls_emb_dim = cls_emb_dim
+        if cls_emb_dim > 0:
+            linear = nn.Linear(cls_emb_dim, self.out_channels, bias=False)
+            torch.nn.init.zeros_(linear.weight)
+            self.cls_emb_dense = nn.Sequential(
+                linear,
+                nn.BatchNorm1d(self.out_channels),
+                nn.ReLU(inplace=True)
+            )
 
-    def forward(self, input: Tensor) -> Tensor:
+    def forward(self, input: Tuple[Tensor, Optional[Tensor]]) -> Tuple[Tensor, Optional[Tensor]]:
+        input, cls_emb = input
         result = self.block(input)
+        if self.cls_emb_dim > 0:
+            result = result + self.cls_emb_dense(cls_emb)[:, :, None, None]
         if self.use_res_connect:
             result = self.stochastic_depth(result)
             result += input
-        return result
+        return result, cls_emb
 
 
 def _efficientnet_conf_v3(
@@ -90,9 +168,9 @@ def _efficientnet_conf_v3(
     inverted_residual_setting: Sequence[Union[MBConvConfig, FusedMBConvConfig]]
     if arch.startswith("efficientnet_v2_m"):
         inverted_residual_setting = [
-            FusedMBConvConfig(1, 3, 1, 24, 24, 3),
-            FusedMBConvConfig(4, 3, 2, 24, 48, 5),
-            FusedMBConvConfig(4, 3, 2, 48, 80, 5),
+            FusedMBConvConfig(1, 3, 1, 24, 24, 3, block=FusedMBConvV3),
+            FusedMBConvConfig(4, 3, 2, 24, 48, 5, block=FusedMBConvV3),
+            FusedMBConvConfig(4, 3, 2, 48, 80, 5, block=FusedMBConvV3),
             MBConvConfig(4, 3, 2, 80, 160, 7, block=MBConvV3),
             MBConvConfig(6, 3, 1, 160, 176, 14, block=MBConvV3),
             MBConvConfig(6, 3, 2, 176, 304, 18, block=MBConvV3),
@@ -103,4 +181,4 @@ def _efficientnet_conf_v3(
         raise ValueError(f"Unsupported model type {arch}")
 
     return inverted_residual_setting, last_channel
-"""
+

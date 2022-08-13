@@ -9,8 +9,11 @@ from torch import nn
 from torchvision.models.efficientnet import (
     _log_api_usage_once, _MBConvConfig, Conv2dNormActivation,
     EfficientNet, EfficientNet_V2_M_Weights, _ovewrite_named_param,
-    _efficientnet_conf, partial, MBConvConfig, FusedMBConvConfig, WeightsEnum
+    partial, MBConvConfig, FusedMBConvConfig, WeightsEnum
 )
+
+from .basic_modules import _efficientnet_conf_v3, MBConvV3
+
 from typing import Dict, Any, Optional, Tuple, List, Sequence, Union, Callable
 
 
@@ -20,6 +23,8 @@ class EfficientNetV3(nn.Module):
         inverted_residual_setting: Sequence[Union[MBConvConfig, FusedMBConvConfig]],
         stochastic_depth_prob: float = 0.2,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
+        cls_emb_dim: int = 0,
+        dilation: int = 1,
         **kwargs: Any,
     ) -> None:
         """
@@ -81,7 +86,7 @@ class EfficientNetV3(nn.Module):
                 # adjust stochastic depth probability based on the depth of the stage block
                 sd_prob = stochastic_depth_prob * float(stage_block_id) / total_stage_blocks
 
-                stage.append(block_cnf.block(block_cnf, sd_prob, norm_layer))
+                stage.append(block_cnf.block(block_cnf, sd_prob, norm_layer, cls_emb_dim=cls_emb_dim, dilation=dilation))
                 stage_block_id += 1
 
             layers.append(nn.Sequential(*stage))
@@ -106,18 +111,13 @@ class EfficientNetV3(nn.Module):
                 nn.init.uniform_(m.weight, -init_range, init_range)
                 nn.init.zeros_(m.bias)
 
-    def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
+    def forward(self, x: torch.Tensor, cls_emb: Optional[torch.Tensor] = None) -> List[torch.Tensor]:
         #res: Dict[str,torch.Tensor] = {}
         x = self.input_conv(x)
-        torch.save(x.cpu(), 'input_conv.pth')
         res = []
-        t = 0
         for layer_name in self.layers_names:
             layer = self.__getattr__(layer_name)
-            x = layer(x)
-            if t== 0:
-                torch.save(x.cpu(), 'fst_block.pth')
-                t = 1
+            x, cls_emb = layer((x, cls_emb))
             #res[layer_name] = x
             res += [x]
         return res
@@ -129,12 +129,19 @@ def _efficientnet(
         last_channel: Optional[int],
         weights: Optional[WeightsEnum],
         progress: bool,
+        cls_emb_dim: int = 0,
+        dilation: int = 1,
         **kwargs: Any,
     ) -> EfficientNetV3:
     if weights is not None:
         _ovewrite_named_param(kwargs, "num_classes", len(weights.meta["categories"]))
 
-    model = EfficientNetV3(inverted_residual_setting, dropout, last_channel=last_channel, **kwargs)
+    model = EfficientNetV3(inverted_residual_setting,
+                           dropout,
+                           last_channel=last_channel,
+                           cls_emb_dim=cls_emb_dim,
+                           dilation=dilation,
+                           **kwargs)
 
     if weights is not None:
         model.load_state_dict(weights.get_state_dict(progress=progress))
@@ -146,6 +153,8 @@ def efficientnet_v2_m(
         *,
         weights: Optional[EfficientNet_V2_M_Weights] = None,
         progress: bool = True,
+        cls_emb_dim: int = 0,
+        dilation: int = 1,
         **kwargs: Any
     ) -> EfficientNetV3:
     """
@@ -154,7 +163,7 @@ def efficientnet_v2_m(
     """
     weights = EfficientNet_V2_M_Weights.verify(weights)
 
-    inverted_residual_setting, last_channel = _efficientnet_conf("efficientnet_v2_m")
+    inverted_residual_setting, last_channel = _efficientnet_conf_v3("efficientnet_v2_m")
     return _efficientnet(
         inverted_residual_setting,
         0.3,
@@ -162,12 +171,18 @@ def efficientnet_v2_m(
         weights,
         progress,
         norm_layer=partial(nn.BatchNorm2d, eps=1e-03),
+        cls_emb_dim=cls_emb_dim,
+        dilation=dilation,
         **kwargs,
     )
 
 
-def create_effnet(load_weights: str = ''):
-    model = efficientnet_v2_m()
+def create_effnet(
+        load_weights: str = '',
+        cls_emb_dim: int = 0,
+        dilation: int = 1
+    ):
+    model = efficientnet_v2_m(cls_emb_dim=cls_emb_dim, dilation=dilation)
     if load_weights == 'imagenet':
         model.load_state_dict(
             torch.load(

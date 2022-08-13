@@ -54,7 +54,9 @@ class TTAHolder(ModelHolder):
         for type_aug, args_aug in idx_tta:
             x = preds['probs'][idx_preds:idx_preds+1].clone()
             if type_aug == 'flip':
-                x = torch.flip(x, dims=args_aug)
+                args_aug = [x for x in args_aug if x != 3]
+                if args_aug:
+                    x = torch.flip(x, dims=args_aug)
             elif type_aug == 'transpose':
                 x = torch.transpose(x, dim0=2, dim1=3)
             elif type_aug == 'rotate90':

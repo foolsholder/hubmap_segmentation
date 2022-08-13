@@ -1,9 +1,8 @@
 {
   "model_cfg": {
     "backbone_cfg": {
-      "type": "swin",
-      "size": "small",
-      "load_weights": "frog"
+      "type": "swinV2",
+      "load_weights": ""
     },
     "use_aux_head": true,
     "num_classes": 6
@@ -38,8 +37,8 @@
   },
   "train_loader": {
     "train": true,
-    "batch_size": 4,
-    "num_workers": 8,
+    "batch_size": 1,
+    "num_workers": 2,
     "height": 512,
     "width": 512,
     "num_classes": 6
@@ -47,7 +46,7 @@
   "valid_loader": {
     "train": false,
     "batch_size": 1,
-    "num_workers": 4,
+    "num_workers": 2,
     "height": 512,
     "width": 512,
     "num_classes": 6

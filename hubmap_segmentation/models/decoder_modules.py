@@ -103,10 +103,13 @@ class DecodeBlock(nn.Module):
         self.bn2 = nn.BatchNorm2d(out_channel).apply(init_weight)
         self.cbam = CBAM(out_channel, reduction=16)
 
+        self.conv1x1_skip = conv1x1(in_channel, out_channel).apply(init_weight)
+        self.bn_skip = nn.BatchNorm2d(out_channel).apply(init_weight)
+
         self.cls_emb_dim = cls_emb_dim
         if cls_emb_dim > 0:
             self.cls_emb_dense = nn.Sequential(
-                nn.Linear(cls_emb_dim, out_channel),
+                nn.Linear(cls_emb_dim, out_channel, bias=False),
                 nn.BatchNorm1d(out_channel),
                 nn.ReLU(inplace=True)
             )
@@ -123,11 +126,11 @@ class DecodeBlock(nn.Module):
         x = self.bn2(self.conv3x3_2(x))
 
         if self.cls_emb_dim > 0:
-            x += self.cls_emb_dense(cls_emb)[:, :, None, None]
+            x = x + self.cls_emb_dense(cls_emb)[:, :, None, None]
 
         x  = self.cbam(x)
         x = F.relu(x)
-        x += skip_connection #shortcut
+        x = x + F.relu(self.bn_skip(self.conv1x1_skip(skip_connection))) #shortcut
 
         return x
 

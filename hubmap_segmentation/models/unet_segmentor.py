@@ -99,9 +99,11 @@ class UNetSegmentor(nn.Module):
         self.cls_emb_dim = cls_emb_dim
         if self.cls_emb_dim > 0:
             self.emb_layer = nn.Sequential(
-                nn.Linear(cls_emb_dim, cls_emb_dim * 2),
+                nn.Linear(cls_emb_dim, cls_emb_dim * 2, bias=False),
+                nn.BatchNorm1d(cls_emb_dim * 2),
                 nn.ReLU(inplace=True),
-                nn.Linear(cls_emb_dim * 2, cls_emb_dim),
+                nn.Linear(cls_emb_dim * 2, cls_emb_dim, bias=False),
+                nn.BatchNorm1d(cls_emb_dim * 2),
                 nn.ReLU(inplace=True)
             )
 

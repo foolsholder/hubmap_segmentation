@@ -205,8 +205,8 @@ class ModelHolder(pl.LightningModule):
         channels = self._num_classes
         h, w = input_x.shape[2:]
 
-        shift_h = self.tiling_height - self.tiling_height // 5
-        shift_w = self.tiling_width - self.tiling_width // 5
+        shift_h = self.tiling_height - self.tiling_height // 3
+        shift_w = self.tiling_width - self.tiling_width // 3
 
         weight = torch.zeros((1, h, w)).to(input_x.device)
         probs = torch.zeros((channels, h, w)).to(input_x.device)
