@@ -43,7 +43,10 @@ if 'seed' in config.keys():
             torch.cuda.manual_seed_all(seed)
 
 model_holder = ModelHolder(config)
-wandb_logger = WandbLogger(**config['wandb_cfg'])
+wandb_logger = WandbLogger(
+    **config['wandb_cfg'],
+    config=config
+)
 trainer = pl.Trainer(
     max_epochs=max_epochs,
     strategy=config['strategy'],

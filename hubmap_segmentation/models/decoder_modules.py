@@ -101,14 +101,15 @@ class DecodeBlock(nn.Module):
 
         self.conv3x3_2 = conv3x3(in_channel, out_channel).apply(init_weight)
         self.bn2 = nn.BatchNorm2d(out_channel).apply(init_weight)
-
         self.cbam = CBAM(out_channel, reduction=16)
-        self.conv1x1   = conv1x1(in_channel, out_channel).apply(init_weight)
-        self.bn_out = nn.BatchNorm2d(out_channel)
 
         self.cls_emb_dim = cls_emb_dim
         if cls_emb_dim > 0:
-            self.cls_emb_dense = nn.Linear(cls_emb_dim, out_channel)
+            self.cls_emb_dense = nn.Sequential(
+                nn.Linear(cls_emb_dim, out_channel),
+                nn.BatchNorm1d(out_channel),
+                nn.ReLU(inplace=True)
+            )
 
     def forward(self, inputs, cls_emb: Optional[torch.Tensor] = None):
         # conv -> bn -> act
@@ -119,17 +120,14 @@ class DecodeBlock(nn.Module):
 
         x  = F.relu(self.bn1(self.conv3x3_1(x)), inplace=True)
 
-        x = self.conv3x3_2(x)
+        x = self.bn2(self.conv3x3_2(x))
 
         if self.cls_emb_dim > 0:
             x += self.cls_emb_dense(cls_emb)[:, :, None, None]
 
-        x  = self.bn2(x)
-
         x  = self.cbam(x)
-
-        x += self.conv1x1(skip_connection) #shortcut
-        x = F.relu(self.bn_out(x), inplace=True)
+        x = F.relu(x)
+        x += skip_connection #shortcut
 
         return x
 
