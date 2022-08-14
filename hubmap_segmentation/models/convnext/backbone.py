@@ -8,10 +8,12 @@ from torch import nn
 
 
 from torchvision.models.convnext import (
-    CNBlockConfig, _log_api_usage_once, CNBlock, LayerNorm2d,
+    CNBlockConfig, _log_api_usage_once, LayerNorm2d,
     Conv2dNormActivation, partial, Tensor, WeightsEnum,
     _ovewrite_named_param, ConvNeXt_Small_Weights
 )
+
+from .basic_modules import VSCNBlock
 
 
 from typing import Dict, Any, Optional, Tuple, List, Sequence, Union, Callable
@@ -23,7 +25,7 @@ class ConvNeXtVS(nn.Module):
         block_setting: List[CNBlockConfig],
         stochastic_depth_prob: float = 0.0,
         layer_scale: float = 1e-6,
-        block: Optional[Callable[..., nn.Module]] = None,
+        block: Optional[Callable[..., nn.Module]] = VSCNBlock,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
         **kwargs: Any,
     ) -> None:
@@ -36,12 +38,10 @@ class ConvNeXtVS(nn.Module):
             raise TypeError("The block_setting should be List[CNBlockConfig]")
 
         if block is None:
-            block = CNBlock
+            block = VSCNBlock
 
         if norm_layer is None:
             norm_layer = partial(LayerNorm2d, eps=1e-6)
-
-        layers: List[nn.Module] = []
 
         # Stem
         firstconv_output_channels = block_setting[0].input_channels
@@ -59,26 +59,26 @@ class ConvNeXtVS(nn.Module):
         total_stage_blocks = sum(cnf.num_layers for cnf in block_setting)
         stage_block_id = 0
         self.layers_names = []
+
         for idx, cnf in enumerate(block_setting):
             # Bottlenecks
-            stage: List[nn.Module] = []
             substage: List[nn.Module] = []
             for _ in range(cnf.num_layers):
                 # adjust stochastic depth probability based on the depth of the stage block
                 sd_prob = stochastic_depth_prob * stage_block_id / (total_stage_blocks - 1.0)
                 substage.append(block(cnf.input_channels, layer_scale, sd_prob))
                 stage_block_id += 1
-            stage.append(nn.Sequential(*substage))
+            stage_layer = nn.Sequential(*substage)
             if cnf.out_channels is not None:
                 # Downsampling
-                stage.append(
-                    nn.Sequential(
-                        norm_layer(cnf.input_channels),
-                        nn.Conv2d(cnf.input_channels, cnf.out_channels, kernel_size=2, stride=2),
-                    )
+                stride_layer = nn.Sequential(
+                    norm_layer(cnf.input_channels),
+                    nn.Conv2d(cnf.input_channels, cnf.out_channels, kernel_size=2, stride=2),
                 )
+                stride_name = f'stride_{idx + 1}'
+                self.__setattr__(stride_name, stride_layer)
             layer_name = f'layer_{idx + 1}'
-            self.__setattr__(layer_name, nn.Sequential(*stage))
+            self.__setattr__(layer_name, stage_layer)
             self.layers_names += [layer_name]
 
         for m in self.modules():
@@ -88,12 +88,14 @@ class ConvNeXtVS(nn.Module):
                     nn.init.zeros_(m.bias)
 
     def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
-        x = self.input_conv(x)
+        x = self.input_conv(x).contiguous()
         res = []
-        for layer_name in self.layers_names:
+        for idx, layer_name in enumerate(self.layers_names):
             layer = self.__getattr__(layer_name)
-            x = layer(x)
+            x = layer(x)#.contiguous()
             res += [x]
+            if idx + 1 != len(self.layers_names):
+                x = self.__getattr__(f'stride_{idx + 1}')(x).contiguous()
         return res
 
 
@@ -153,8 +155,8 @@ def create_convnext(load_weights: str = '') -> ConvNeXtVS:
         import os
         model.load_state_dict(
             torch.load(
-                os.environ['PRETRAINED'],
-                'convnext_vs_small_imagenet.pth',
+                os.path.join(os.environ['PRETRAINED'],
+                'convnext_vs_small_imagenet.pth'),
                 map_location='cpu'
             )
         )

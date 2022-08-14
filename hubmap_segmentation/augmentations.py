@@ -72,13 +72,13 @@ def get_simple_augmentations(
 
                 OneOf(
                     [
-                        GaussianBlur(blur_limit=(13, 21), p=0.5),
+                        GaussianBlur(blur_limit=(7, 19), p=0.5),
                         GaussNoise(var_limit=30, p=0.5, per_channel=True),
                     ],
                     p=0.5,
                 ),
-                ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2,
-                                 rotate_limit=(-30,30),
+                ShiftScaleRotate(shift_limit=0.15, scale_limit=0.2,
+                                 rotate_limit=(-45, 45),
                                  interpolation=cv2.INTER_LANCZOS4,
                                  border_mode=0, p=0.7),
 

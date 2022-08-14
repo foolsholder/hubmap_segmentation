@@ -24,7 +24,7 @@ if __name__ == '__main__':
     for idx, layer_name in enumerate(our_model.layers_names):
         layer = our_model.__getattr__(layer_name)
         layer.load_state_dict(
-            torch_model.trunk_output[layer_name].state_dict()
+            torch_model.trunk_output[idx].state_dict()
         )
     torch.save(
         our_model.state_dict(),

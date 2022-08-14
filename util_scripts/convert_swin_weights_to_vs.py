@@ -24,9 +24,10 @@ if __name__ == '__main__':
     for idx, layer_name in enumerate(our_model.layers_names):
         layer = our_model.__getattr__(layer_name)
         print(idx, flush=True)
-        layer[0].load_state_dict(torch_model.features[2 * idx + 1].state_dict())
+        layer.load_state_dict(torch_model.features[2 * idx + 1].state_dict())
         if idx != 3:
-            layer[1].load_state_dict(torch_model.features[2 * idx + 2].state_dict())
+            merge_layer = our_model.__getattr__(f'merge_{idx + 1}')
+            merge_layer.load_state_dict(torch_model.features[2 * idx + 2].state_dict())
     torch.save(
         our_model.state_dict(),
         os.path.join(path_to_save, 'swin_vs_small_imagenet.pth')

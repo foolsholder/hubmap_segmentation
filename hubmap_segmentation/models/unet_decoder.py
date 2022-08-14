@@ -43,6 +43,7 @@ class UNetDecoder(nn.Module):
             layer_name = 'f_{}'.format(idx + 1)
             self.__setattr__(layer_name, layer)
             self.layers_names += [layer_name]
+
         self.g = decoder_block_cls(
             in_channel=prev,
             out_channel=last_channels,

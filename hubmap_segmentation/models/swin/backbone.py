@@ -72,6 +72,7 @@ class SwinTransformerVS(nn.Module):
         total_stage_blocks = sum(depths)
         stage_block_id = 0
         self.layers_names = []
+        self.merge_names = []
 
         # build SwinTransformer blocks
         for i_stage in range(len(depths)):
@@ -94,14 +95,16 @@ class SwinTransformerVS(nn.Module):
                     )
                 )
                 stage_block_id += 1
-            stage = [nn.Sequential(*substage)]
+            stage_layer = nn.Sequential(*substage)
             # add patch merging layer
             if i_stage < (len(depths) - 1):
-                stage.append(PatchMerging(dim, norm_layer))
+                merge_layer = PatchMerging(dim, norm_layer)
+                merge_name = f'merge_{i_stage+1}'
+                self.__setattr__(merge_name, merge_layer)
+                self.merge_names += [merge_name]
 
             layer_name = f'layer_{i_stage + 1}'
-            layer = nn.Sequential(*stage)
-            self.__setattr__(layer_name, layer)
+            self.__setattr__(layer_name, stage_layer)
             self.layers_names += [layer_name]
 
         for m in self.modules():
@@ -113,10 +116,13 @@ class SwinTransformerVS(nn.Module):
     def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
             x = self.input_conv(x)
             res = []
-            for layer_name in self.layers_names:
+            for idx, layer_name in enumerate(self.layers_names):
                 layer = self.__getattr__(layer_name)
                 x = layer(x)
-                res += [x.permute(0, 3, 1, 2)]
+                res += [x.permute(0, 3, 1, 2).contiguous()]
+                if idx + 1 != len(self.layers_names):
+                    merge_name = self.merge_names[idx]
+                    x = self.__getattr__(merge_name)(x)
             return res
 
 
@@ -192,8 +198,8 @@ def create_swin(load_weights: str = '') -> SwinTransformerVS:
         import os
         model.load_state_dict(
             torch.load(
-                os.environ['PRETRAINED'],
-                'swin_vs_small_imagenet.pth',
+                os.path.join(os.environ['PRETRAINED'],
+                'swin_vs_small_imagenet.pth'),
                 map_location='cpu'
             )
         )

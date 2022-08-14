@@ -23,14 +23,14 @@ backboned_unet_args = {
     'swin': {
         'encoder_out' : [96, 192, 384, 768],
         'decoder_out' : [256, 256, 128, 128],
-        'upsamples' : [True, True, True, False][::-1],
+        'upsamples' : [True, True, True, True][::-1],
         'center_channels' : 256,
         'last_channels' : 64
     },
     'convnext': {
         'encoder_out' : [96, 192, 384, 768],
         'decoder_out' : [256, 256, 128, 128],
-        'upsamples' : [True, True, True, False][::-1],
+        'upsamples' : [True, True, True, True][::-1],
         'center_channels' : 256,
         'last_channels' : 64
     },
@@ -99,6 +99,7 @@ class UNetSegmentor(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(last_channels, num_classes, kernel_size=1)
         )
+        # 6 64 1 1
         self.use_aux_head = use_aux_head
         if use_aux_head:
             self.aux_head = nn.Sequential(
@@ -143,7 +144,7 @@ class UNetSegmentor(nn.Module):
         last, decoder_feats = self.decoder(encoder_feats, cls_emb)
 
         logits = self.final_conv(last)
-        logits = F.interpolate(logits, size=input_x.shape[2:], mode='bilinear')
+        #logits = F.interpolate(logits, size=input_x.shape[2:], mode='bilinear')
 
         if self.num_classes == 1:
             probs = torch.sigmoid(logits)

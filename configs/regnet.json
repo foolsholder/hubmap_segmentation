@@ -33,7 +33,7 @@
     }
   },
   "wandb_cfg": {
-    "project": "hubmap",
+    "project": "hubmap_experimental",
     "entity": "dreamtigers",
     "name": "catce+catsdice_regnet_adamw_LR-5e-5_512_1024_{}{}_F{}_SA_wo_ch"
   },

@@ -151,8 +151,8 @@ def create_regnet_y(load_weights: str = '') -> RegNetVS:
         import os
         model.load_state_dict(
             torch.load(
-                os.environ['PRETRAINED'],
-                'regnet_vs_y_imagenet.pth',
+                os.path.join(os.environ['PRETRAINED'],
+                'regnet_vs_y_imagenet.pth'),
                 map_location='cpu'
             )
         )
