@@ -57,22 +57,22 @@ def get_simple_augmentations(
                 ImageCompression(quality_lower=85, quality_upper=95, p=0.5),
                 # NEW
                 #ChannelShuffle(p=0.75),
-                RGBShift(p=0.75),
-                CLAHE(p=0.75), #NEW
+                #RGBShift(p=0.75),
+                #CLAHE(p=0.75), #NEW
                 OneOf([
-                    RandomGamma(p=0.5),
-                    RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.4,
-                                             brightness_by_max=True,p=0.5),
+                    RandomGamma(gamma_limit=(75, 120), p=0.5),
+                    RandomBrightnessContrast(brightness_limit=(-0.07, 0.1), contrast_limit=0.2,
+                                             brightness_by_max=True, p=0.5),
                     ],
                     p=0.75
                 ),
-                HueSaturationValue(hue_shift_limit=40, sat_shift_limit=40,
-                                   val_shift_limit=25, p=0.75),
+                HueSaturationValue(hue_shift_limit=(-45, -20), sat_shift_limit=3,
+                                   val_shift_limit=(-5, 40), p=0.75),
 
 
                 OneOf(
                     [
-                        GaussianBlur(blur_limit=(7, 19), p=0.5),
+                        GaussianBlur(blur_limit=(3, 7), p=0.3),
                         GaussNoise(var_limit=30, p=0.5, per_channel=True),
                     ],
                     p=0.5,

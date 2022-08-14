@@ -2,8 +2,7 @@
   "model_cfg": {
     "backbone_cfg": {
       "type": "effnet",
-      "load_weights": "imagenet",
-      "cls_emb_dim": 0
+      "load_weights": "imagenet"
     },
     "use_aux_head": true,
     "ffc_decoder": false,
@@ -40,7 +39,7 @@
   },
   "train_loader": {
     "train": true,
-    "batch_size": 4,
+    "batch_size": 6,
     "num_workers": 8,
     "height": 512,
     "width": 512,
@@ -66,5 +65,5 @@
   "strategy": "ddp",
   "num_nodes": 1,
   "log_every_n_steps": 1,
-  "gradient_clip_val": 30.0
+  "gradient_clip_val": 5.0
 }

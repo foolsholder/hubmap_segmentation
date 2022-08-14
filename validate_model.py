@@ -38,7 +38,7 @@ if False:
               "type": "effnet",
               "load_weights": "imagenet"
             },
-            "use_aux_head": true,
+            "use_aux_head": True,
             "num_classes": 6
         },
         ckpt_path_list=[
