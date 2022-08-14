@@ -28,7 +28,8 @@ class SDataset(Dataset):
             height: int = 512,
             width: int = 512,
             fold: Optional[int] = None,
-            num_classes: int = 1
+            num_classes: int = 1,
+            resolution: int = 1024
     ):
         super(SDataset, self).__init__()
         self.num_classes = num_classes
@@ -40,8 +41,8 @@ class SDataset(Dataset):
         self.data_folder: str = root
         self.root = root
 
-        self.folder_images = 'resized_images/images_scaled_1024'#.format(2 * height)
-        self.folder_masks = 'resized_images/masks_scaled_1024'#.format(2 * height)
+        self.folder_images = 'resized_images/images_scaled_{}'.format(resolution)
+        self.folder_masks = 'resized_images/masks_scaled_{}'.format(resolution)
 
         suffix_csv = 'train_{}' if train else 'valid_{}'
         suffix_csv = suffix_csv.format(fold)
@@ -142,6 +143,7 @@ def create_loader(
         width: int = 512,
         fold: Optional[int] = None,
         num_classes: int = 1,
+        resolution: int = 1024
     ) -> DataLoader:
     dataset = SDataset(
         train,
@@ -149,6 +151,7 @@ def create_loader(
         width=width,
         fold=fold,
         num_classes=num_classes,
+        resolution=resolution
     )
     return DataLoader(
         dataset,
