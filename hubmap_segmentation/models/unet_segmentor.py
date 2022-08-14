@@ -7,6 +7,7 @@ from typing import Dict, Any, List, Optional, Tuple, Sequence, Union
 from .swin.backbone import create_swin
 from .effnet.backbone import create_effnet
 from .convnext.backbone import create_convnext
+from .regnet.backbone import create_regnet_y
 from .unet_decoder import UNetDecoder
 from .decoder_modules import get_timestep_embedding
 
@@ -15,13 +16,14 @@ avaliable_backbones = {
     'swin': create_swin,
     'effnet': create_effnet,
     'convnext': create_convnext,
+    'regnet': create_regnet_y
 }
 
 backboned_unet_args = {
     'swin': {
         'encoder_out' : [96, 192, 384, 768],
         'decoder_out' : [256, 256, 128, 128],
-        'upsamples' : [True, True, True, True][::-1],
+        'upsamples' : [True, True, True, False][::-1],
         'center_channels' : 256,
         'last_channels' : 64
     },
@@ -29,6 +31,13 @@ backboned_unet_args = {
         'encoder_out' : [96, 192, 384, 768],
         'decoder_out' : [256, 256, 128, 128],
         'upsamples' : [True, True, True, False][::-1],
+        'center_channels' : 256,
+        'last_channels' : 64
+    },
+    'regnet': {
+        'encoder_out' : [224, 448, 896, 2016], # 2048
+        'decoder_out' : [256, 256, 128, 128],
+        'upsamples' : [True, True, True, True][::-1],
         'center_channels' : 256,
         'last_channels' : 64
     },
@@ -135,6 +144,7 @@ class UNetSegmentor(nn.Module):
 
         logits = self.final_conv(last)
         logits = F.interpolate(logits, size=input_x.shape[2:], mode='bilinear')
+
         if self.num_classes == 1:
             probs = torch.sigmoid(logits)
         else:
@@ -148,7 +158,7 @@ class UNetSegmentor(nn.Module):
             aux_logits = self.aux_head(decoder_feats[-1])
             aux_logits = F.interpolate(
                 aux_logits,
-                size=logits.shape[2:],
+                size=input_x.shape[2:],
                 mode='bilinear',
                 align_corners=False
             )

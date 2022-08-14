@@ -1,10 +1,12 @@
 {
   "model_cfg": {
     "backbone_cfg": {
-      "type": "swinV2",
-      "load_weights": ""
+      "type": "regnet",
+      "load_weights": "imagenet"
     },
     "use_aux_head": true,
+    "ffc_decoder": false,
+    "cls_emb_dim": 0,
     "num_classes": 6
   },
   "holder_cfg": {
@@ -16,29 +18,29 @@
   "opt_sched": {
     "opt": {
       "type": "AdamW",
-      "lr": 1e-3,
+      "lr": 5e-5,
       "weight_decay": 5e-2,
       "betas": [0.9, 0.999],
       "eps": 1e-8
     },
     "sched": {
       "type": "LinearWarmupCosineAnnealingLR",
-      "warmup_epochs": 1000,
+      "warmup_epochs": 200,
       "max_epochs": -1,
       "warmup_start_lr": 1e-8,
-      "eta_min": 1e-3,
+      "eta_min": 5e-5,
       "interval": "step"
     }
   },
   "wandb_cfg": {
-    "project": "hubmap_experimental",
+    "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "scaled_fbce+sdice_effnet_adamw_512_{}{}_F{}_SA"
+    "name": "catce+catsdice_regnet_adamw_LR-5e-5_512_1024_{}{}_F{}_SA_wo_ch"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 1,
-    "num_workers": 2,
+    "batch_size": 4,
+    "num_workers": 8,
     "height": 512,
     "width": 512,
     "num_classes": 6
@@ -46,16 +48,16 @@
   "valid_loader": {
     "train": false,
     "batch_size": 1,
-    "num_workers": 2,
+    "num_workers": 4,
     "height": 512,
     "width": 512,
     "num_classes": 6
   },
   "losses": {
-    "weights": [1.0, 10.0],
+    "weights": [1.0, 1.0],
     "names": [
-        "sigmoid_soft_dice",
-        "binary_focal_loss"
+        "cat_soft_dice",
+        "catce"
     ],
     "aux": 0.4
   },
@@ -63,6 +65,5 @@
   "strategy": "ddp",
   "num_nodes": 1,
   "log_every_n_steps": 1,
-  "gradient_clip_val": 5.0
+  "gradient_clip_val": 30.0
 }
-

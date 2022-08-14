@@ -72,7 +72,7 @@ def get_simple_augmentations(
 
                 OneOf(
                     [
-                        GaussianBlur(blur_limit=(13, 21), p=0.5),
+                        GaussianBlur(blur_limit=(3, 9), p=0.5),
                         GaussNoise(var_limit=30, p=0.5, per_channel=True),
                     ],
                     p=0.5,
