@@ -23,7 +23,6 @@ class EfficientNetV3(nn.Module):
         inverted_residual_setting: Sequence[Union[MBConvConfig, FusedMBConvConfig]],
         stochastic_depth_prob: float = 0.2,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
-        cls_emb_dim: int = 0,
         dilation: int = 1,
         **kwargs: Any,
     ) -> None:
@@ -86,7 +85,7 @@ class EfficientNetV3(nn.Module):
                 # adjust stochastic depth probability based on the depth of the stage block
                 sd_prob = stochastic_depth_prob * float(stage_block_id) / total_stage_blocks
 
-                stage.append(block_cnf.block(block_cnf, sd_prob, norm_layer, cls_emb_dim=cls_emb_dim, dilation=dilation))
+                stage.append(block_cnf.block(block_cnf, sd_prob, norm_layer, dilation=dilation))
                 stage_block_id += 1
 
             layers.append(nn.Sequential(*stage))
@@ -111,13 +110,13 @@ class EfficientNetV3(nn.Module):
                 nn.init.uniform_(m.weight, -init_range, init_range)
                 nn.init.zeros_(m.bias)
 
-    def forward(self, x: torch.Tensor, cls_emb: Optional[torch.Tensor] = None) -> List[torch.Tensor]:
+    def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
         #res: Dict[str,torch.Tensor] = {}
         x = self.input_conv(x)
         res = []
         for layer_name in self.layers_names:
             layer = self.__getattr__(layer_name)
-            x, cls_emb = layer((x, cls_emb))
+            x = layer(x)
             #res[layer_name] = x
             res += [x]
         return res
@@ -129,7 +128,6 @@ def _efficientnet(
         last_channel: Optional[int],
         weights: Optional[WeightsEnum],
         progress: bool,
-        cls_emb_dim: int = 0,
         dilation: int = 1,
         **kwargs: Any,
     ) -> EfficientNetV3:
@@ -139,7 +137,6 @@ def _efficientnet(
     model = EfficientNetV3(inverted_residual_setting,
                            dropout,
                            last_channel=last_channel,
-                           cls_emb_dim=cls_emb_dim,
                            dilation=dilation,
                            **kwargs)
 
@@ -153,7 +150,6 @@ def efficientnet_v2_m(
         *,
         weights: Optional[EfficientNet_V2_M_Weights] = None,
         progress: bool = True,
-        cls_emb_dim: int = 0,
         dilation: int = 1,
         **kwargs: Any
     ) -> EfficientNetV3:
@@ -171,7 +167,6 @@ def efficientnet_v2_m(
         weights,
         progress,
         norm_layer=partial(nn.BatchNorm2d, eps=1e-03),
-        cls_emb_dim=cls_emb_dim,
         dilation=dilation,
         **kwargs,
     )
@@ -179,10 +174,9 @@ def efficientnet_v2_m(
 
 def create_effnet(
         load_weights: str = '',
-        cls_emb_dim: int = 0,
         dilation: int = 1
     ):
-    model = efficientnet_v2_m(cls_emb_dim=cls_emb_dim, dilation=dilation)
+    model = efficientnet_v2_m(dilation=dilation)
     if load_weights == 'imagenet':
         model.load_state_dict(
             torch.load(

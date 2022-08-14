@@ -17,7 +17,7 @@ if __name__ == '__main__':
     else:
         path_to_save = argv[1]
     sys.path.append('..')
-    torch_model = efficientnet_v2_m(EfficientNet_V2_M_Weights.IMAGENET1K_V1)
+    torch_model = efficientnet_v2_m(weights=EfficientNet_V2_M_Weights.IMAGENET1K_V1)
     our_model = our_effnet()
 
     our_model.input_conv.load_state_dict(torch_model.features[0].state_dict())

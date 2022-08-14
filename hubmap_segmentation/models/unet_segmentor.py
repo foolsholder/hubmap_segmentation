@@ -4,15 +4,17 @@ from torch.nn import functional as F
 
 
 from typing import Dict, Any, List, Optional, Tuple, Sequence, Union
-from .swin_v1.backbone import create_swin_v1
+from .swin.backbone import create_swin
 from .effnet.backbone import create_effnet
+from .convnext.backbone import create_convnext
 from .unet_decoder import UNetDecoder
 from .decoder_modules import get_timestep_embedding
 
 
 avaliable_backbones = {
-    'swin': create_swin_v1,
-    'effnet': create_effnet
+    'swin': create_swin,
+    'effnet': create_effnet,
+    'convnext': create_convnext,
 }
 
 backboned_unet_args = {
@@ -20,6 +22,13 @@ backboned_unet_args = {
         'encoder_out' : [96, 192, 384, 768],
         'decoder_out' : [256, 256, 128, 128],
         'upsamples' : [True, True, True, True][::-1],
+        'center_channels' : 256,
+        'last_channels' : 64
+    },
+    'convnext': {
+        'encoder_out' : [96, 192, 384, 768],
+        'decoder_out' : [256, 256, 128, 128],
+        'upsamples' : [True, True, True, False][::-1],
         'center_channels' : 256,
         'last_channels' : 64
     },
@@ -103,7 +112,7 @@ class UNetSegmentor(nn.Module):
                 nn.BatchNorm1d(cls_emb_dim * 2),
                 nn.ReLU(inplace=True),
                 nn.Linear(cls_emb_dim * 2, cls_emb_dim, bias=False),
-                nn.BatchNorm1d(cls_emb_dim * 2),
+                nn.BatchNorm1d(cls_emb_dim),
                 nn.ReLU(inplace=True)
             )
 
@@ -125,6 +134,7 @@ class UNetSegmentor(nn.Module):
         last, decoder_feats = self.decoder(encoder_feats, cls_emb)
 
         logits = self.final_conv(last)
+        logits = F.interpolate(logits, size=input_x.shape[2:], mode='bilinear')
         if self.num_classes == 1:
             probs = torch.sigmoid(logits)
         else:

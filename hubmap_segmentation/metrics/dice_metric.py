@@ -13,7 +13,11 @@ class Dice(Metric):
         self.smooth = smooth
         self._name = 'dice'
 
-        all = ['lung', 'spleen', 'kidney', 'prostate', 'largeintestine', 'wo_kidney']
+        all = [
+            'lung', 'spleen', 'kidney',
+            'prostate', 'largeintestine',
+            'wo_kidney', 'wo_lung'
+        ]
         self.all = all
         for organ in all:
             self.add_state('{}_dice'.format(organ), default=torch.tensor(0.), dist_reduce_fx="sum")
@@ -69,6 +73,9 @@ class Dice(Metric):
             if organ != 'kidney':
                 self.wo_kidney_dice += dice[idx]
                 self.wo_kidney_samples += 1
+            if organ != 'lung':
+                self.wo_lung_dice += dice[idx]
+                self.wo_lung_samples += 1
 
         #with open('full_res_metrics.txt', 'a') as f:
         #    f.write('{}, {}, {}\n'.format(batch['image_id'][0], batch['organ'][0], dice.item()))
@@ -92,8 +99,10 @@ class Dice(Metric):
                 value = self.prostate_dice.float() / self.prostate_samples
             elif organ == 'largeintestine':
                 value = self.largeintestine_dice.float() / self.largeintestine_samples
-            else:
+            elif organ == 'wo_kidney':
                 value = self.wo_kidney_dice.float() / self.wo_kidney_samples
+            else:
+                value = self.wo_lung_dice.float() / self.wo_lung_samples
             res[self._name + '/' + organ] = value
         res[self._name + '/valid'] = self.compute()
         return res

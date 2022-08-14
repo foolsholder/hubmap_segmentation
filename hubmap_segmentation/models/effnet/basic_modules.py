@@ -21,7 +21,6 @@ class FusedMBConvV3(nn.Module):
         cnf: FusedMBConvConfig,
         stochastic_depth_prob: float,
         norm_layer: Callable[..., nn.Module],
-        cls_emb_dim: int = 0,
         dilation: int = 1
     ) -> None:
         super().__init__()
@@ -70,13 +69,13 @@ class FusedMBConvV3(nn.Module):
         self.stochastic_depth = StochasticDepth(stochastic_depth_prob, "row")
         self.out_channels = cnf.out_channels
 
-    def forward(self, input: Tuple[Tensor, Optional[Tensor]]) -> Tuple[Tensor, Optional[Tensor]]:
-        input, cls_emb = input
+    def forward(self, input: Tensor) -> Tensor:
+        input = input
         result = self.block(input)
         if self.use_res_connect:
             result = self.stochastic_depth(result)
             result += input
-        return result, cls_emb
+        return result
 
 
 class MBConvV3(nn.Module):
@@ -85,7 +84,6 @@ class MBConvV3(nn.Module):
         cnf: MBConvConfig,
         stochastic_depth_prob: float,
         norm_layer: Callable[..., nn.Module],
-        cls_emb_dim: int = 0,
         dilation: int = 1,
         se_layer: Callable[..., nn.Module] = SqueezeExcitation,
     ) -> None:
@@ -140,25 +138,14 @@ class MBConvV3(nn.Module):
         self.block = nn.Sequential(*layers)
         self.stochastic_depth = StochasticDepth(stochastic_depth_prob, "row")
         self.out_channels = cnf.out_channels
-        self.cls_emb_dim = cls_emb_dim
-        if cls_emb_dim > 0:
-            linear = nn.Linear(cls_emb_dim, self.out_channels, bias=False)
-            torch.nn.init.zeros_(linear.weight)
-            self.cls_emb_dense = nn.Sequential(
-                linear,
-                nn.BatchNorm1d(self.out_channels),
-                nn.ReLU(inplace=True)
-            )
 
-    def forward(self, input: Tuple[Tensor, Optional[Tensor]]) -> Tuple[Tensor, Optional[Tensor]]:
-        input, cls_emb = input
+    def forward(self, input: Tensor) -> Tensor:
+        input = input
         result = self.block(input)
-        if self.cls_emb_dim > 0:
-            result = result + self.cls_emb_dense(cls_emb)[:, :, None, None]
         if self.use_res_connect:
             result = self.stochastic_depth(result)
             result += input
-        return result, cls_emb
+        return result
 
 
 def _efficientnet_conf_v3(

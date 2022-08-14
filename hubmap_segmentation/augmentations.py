@@ -56,7 +56,7 @@ def get_simple_augmentations(
 
                 ImageCompression(quality_lower=85, quality_upper=95, p=0.5),
                 # NEW
-                ChannelShuffle(p=0.75),
+                #ChannelShuffle(p=0.75),
                 RGBShift(p=0.75),
                 CLAHE(p=0.75), #NEW
                 OneOf([
@@ -69,42 +69,18 @@ def get_simple_augmentations(
                 HueSaturationValue(hue_shift_limit=40, sat_shift_limit=40,
                                    val_shift_limit=25, p=0.75),
 
-                #OneOf(
-                #    [
-                #        OpticalDistortion(
-                #            interpolation=cv2.INTER_LANCZOS4,
-                #            p=0.5
-                #        ),
-                #        GridDistortion(
-                #            interpolation=cv2.INTER_LANCZOS4,
-                #            p=0.5
-                #        ),
-                #ElasticTransform(
-                #    alpha_affine=15,
-                #    sigma=1,
-                #    interpolation=cv2.INTER_LANCZOS4,
-                #    p=0.5
-                #),
-                #    ],
-                #    p=0.5
-                #),
 
                 OneOf(
                     [
-                        GaussianBlur(blur_limit=(7, 19), p=0.35),
+                        GaussianBlur(blur_limit=(13, 21), p=0.5),
                         GaussNoise(var_limit=30, p=0.5, per_channel=True),
-                        #UniformNoise(magnitude=25, p=0.5),
                     ],
                     p=0.5,
                 ),
-
-
-                ShiftScaleRotate(shift_limit=0.25, scale_limit=0.25,
-                                 rotate_limit=(-45,45),
+                ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2,
+                                 rotate_limit=(-30,30),
                                  interpolation=cv2.INTER_LANCZOS4,
-                                 border_mode=0, p=0.75),
-                #RandStainNA(p=1.0),
-
+                                 border_mode=0, p=0.7),
 
                 Normalize(),
                 ToTensorV2()
@@ -114,11 +90,6 @@ def get_simple_augmentations(
         # INTER_LANCZOS4
         return Compose(
             [
-                #Resize(
-                #    height=height,
-                #    width=width,
-                #    interpolation=cv2.INTER_LANCZOS4
-                #),
                 Normalize(),
                 ToTensorV2()
             ]

@@ -65,7 +65,7 @@ trainer = pl.Trainer(
             ),
             save_weights_only=True,
             save_top_k=10,
-            monitor='dice/valid',
+            monitor='dice/wo_lung',
             mode='max'
         )
     ],

@@ -15,14 +15,14 @@ def create_masks():
     else:
         root = argv[1]
 
-    H = 1024
+    H = 1024 * 3 // 2
 
-    koef = 1024 / 3000.
+    koef = H / 3000.
 
     csv_path = os.path.join(root, 'train.csv')
     df = pd.read_csv(csv_path)
 
-    new_masks_path = os.path.join(root, 'resized_images/masks_scaled_1024')
+    new_masks_path = os.path.join(root, 'resized_images/masks_scaled_{}'.format(H))
     if not os.path.exists(new_masks_path):
         os.makedirs(new_masks_path)
 
@@ -61,14 +61,14 @@ def create_images():
     else:
         root = argv[1]
 
-    H = 1024
+    H = 1024 * 3 // 2
 
-    koef = 1024 / 3000.
+    koef = H / 3000.
 
     csv_path = os.path.join(root, 'train.csv')
     df = pd.read_csv(csv_path)
 
-    new_images_path = os.path.join(root, 'resized_images/images_scaled_1024')
+    new_images_path = os.path.join(root, 'resized_images/images_scaled_{}'.format(H))
 
     if not os.path.exists(new_images_path):
         os.makedirs(new_images_path)
