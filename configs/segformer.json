@@ -14,7 +14,7 @@
     "tiling_width": 512,
     "use_tiling_inf": true
   },
-  "max_epochs": 150,
+  "max_epochs": 50,
   "opt_sched": {
     "opt": {
       "type": "AdamW",
@@ -35,11 +35,11 @@
   "wandb_cfg": {
     "project": "hubmap_experimental",
     "entity": "dreamtigers",
-    "name": "catce+catsdice_effnet_emb_96_adamw_LR-5e-5_512_1024_{}{}_F{}_SA"
+    "name": "catce+catsdice_segformer_pretrained_tingir_augs_adamw_LR-5e-5_512_1024_{}{}_F{}_SA"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 22,
+    "batch_size": 24,
     "num_workers": 16,
     "height": 512,
     "width": 512,
