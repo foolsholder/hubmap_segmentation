@@ -14,7 +14,7 @@ from typing import (
 )
 from hubmap_segmentation.metrics.dice_metric import Dice
 from hubmap_segmentation.losses import (
-    BCELoss, SigmoidSoftDiceLoss,
+    BCELoss, SigmoidSoftDiceLoss, NLSDLoss,
     LossAggregation, CATCELoss, CatSoftDiceLoss,
     BinaryFocalLoss, TverskyLoss, CatFocalLoss,
     LovaszHingeLoss, SymmetricUnifiedFocalLoss
@@ -31,7 +31,8 @@ available_losses = {
     'cat_lovasz': LovaszHingeLoss,
     'cat_soft_dice': CatSoftDiceLoss,
     'cat_focal_loss': CatFocalLoss,
-    'catce': CATCELoss
+    'catce': CATCELoss,
+    'negative_log_cat_soft_dice': NLSDLoss
 }
 
 

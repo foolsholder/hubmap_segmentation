@@ -10,7 +10,7 @@ from torch import nn
 from torchvision.models.convnext import (
     CNBlockConfig, _log_api_usage_once, LayerNorm2d,
     Conv2dNormActivation, partial, Tensor, WeightsEnum,
-    _ovewrite_named_param, ConvNeXt_Small_Weights
+    _ovewrite_named_param, ConvNeXt_Small_Weights, ConvNeXt_Base_Weights
 )
 
 from .basic_modules import VSCNBlock
@@ -149,14 +149,47 @@ def convnext_vs_small(
     return _convnext_vs(block_setting, stochastic_depth_prob, weights, progress, **kwargs)
 
 
-def create_convnext(load_weights: str = '') -> ConvNeXtVS:
-    model = convnext_vs_small()
+def convnext_base(
+        *,
+        weights = None,
+        progress: bool = True, **kwargs: Any
+    ) -> ConvNeXtVS:
+    """ConvNeXt Base model architecture from the
+    `A ConvNet for the 2020s <https://arxiv.org/abs/2201.03545>`_ paper.
+
+    Args:
+        weights (:class:`~torchvision.models.convnext.ConvNeXt_Base_Weights`, optional): The pretrained
+            weights to use. See :class:`~torchvision.models.convnext.ConvNeXt_Base_Weights`
+            below for more details and possible values. By default, no pre-trained weights are used.
+        progress (bool, optional): If True, displays a progress bar of the download to stderr. Default is True.
+        **kwargs: parameters passed to the ``torchvision.models.convnext.ConvNext``
+            base class. Please refer to the `source code
+            <https://github.com/pytorch/vision/blob/main/torchvision/models/convnext.py>`_
+            for more details about this class.
+
+    .. autoclass:: torchvision.models.ConvNeXt_Base_Weights
+        :members:
+    """
+    weights = ConvNeXt_Base_Weights.verify(weights)
+
+    block_setting = [
+        CNBlockConfig(128, 256, 3),
+        CNBlockConfig(256, 512, 3),
+        CNBlockConfig(512, 1024, 27),
+        CNBlockConfig(1024, None, 3),
+    ]
+    stochastic_depth_prob = kwargs.pop("stochastic_depth_prob", 0.5)
+    return _convnext_vs(block_setting, stochastic_depth_prob, weights, progress, **kwargs)
+
+
+def create_convnext(load_weights: str = '', size: str = 'small') -> ConvNeXtVS:
+    model = convnext_vs_small() if size == 'small' else convnext_base()
     if load_weights == 'imagenet':
         import os
         model.load_state_dict(
             torch.load(
                 os.path.join(os.environ['PRETRAINED'],
-                'convnext_vs_small_imagenet.pth'),
+                f'convnext_vs_{size}_imagenet.pth'),
                 map_location='cpu'
             )
         )

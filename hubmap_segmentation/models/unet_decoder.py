@@ -69,7 +69,7 @@ class UNetDecoder(nn.Module):
             idx = idx + 1 # f_1, f_2 ...
             out = getattr(self, layer_name)(last_feat, cls_emb)
             outs += [out]
-            if idx + 1 <= len(feature):
+            if idx + 1 <= len(self.layers_names):
                 last_feat = torch.cat([out, feature[-1-idx]], dim=1)
             else:
                 last_feat = out

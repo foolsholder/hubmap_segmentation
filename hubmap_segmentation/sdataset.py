@@ -29,10 +29,12 @@ class SDataset(Dataset):
             width: int = 512,
             fold: Optional[int] = None,
             num_classes: int = 1,
-            resolution: int = 1024
+            resolution: int = 1024,
+            prob_miss: float = 0.05
     ):
         super(SDataset, self).__init__()
         self.num_classes = num_classes
+        self.prob_miss = prob_miss
         if root == '':
             root = os.environ['SDATASET_PATH']
         self.height = height
@@ -68,7 +70,7 @@ class SDataset(Dataset):
         self.augs = augs
 
     def __len__(self) -> int:
-        return len(self.df) * (5 if self.train else 1)
+        return len(self.df) * (6 if self.train else 1)
 
     def __getitem__(
             self,
@@ -128,10 +130,10 @@ class SDataset(Dataset):
             mask: np.array
     ) -> Dict[str, Union[np.array, torch.Tensor]]:
         aug = self.augs(image=image, mask=mask)
-        #while aug['mask'].sum() < 1.0:
-        #    aug = self.augs(image=image, mask=mask)
-        #    if np.random.rand() < self.prob_miss:
-        #        break
+        while aug['mask'].sum() < 1.0:
+            aug = self.augs(image=image, mask=mask)
+            if np.random.rand() < self.prob_miss:
+                break
         return aug
 
 

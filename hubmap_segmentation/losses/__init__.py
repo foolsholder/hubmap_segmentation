@@ -1,5 +1,5 @@
 from .loss_metric import LossMetric
-from .soft_dice_loss import SigmoidSoftDiceLoss, CatSoftDiceLoss
+from .soft_dice_loss import SigmoidSoftDiceLoss, CatSoftDiceLoss, NLSDLoss
 from .loss_aggregation import LossAggregation
 from .bce_loss import BCELoss
 from .focal_loss import BinaryFocalLoss, CatFocalLoss
@@ -16,5 +16,6 @@ __all__ = [
     "BinaryFocalLoss",
     "CatSoftDiceLoss",
     "CatFocalLoss",
-    "CATCELoss"
+    "CATCELoss",
+    "NLSDLoss"
 ]

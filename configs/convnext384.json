@@ -1,8 +1,7 @@
 {
   "model_cfg": {
     "backbone_cfg": {
-      "type": "effnet",
-      "dilation": 1,
+      "type": "convnext",
       "load_weights": "imagenet"
     },
     "use_aux_head": true,
@@ -11,50 +10,50 @@
     "num_classes": 6
   },
   "holder_cfg": {
-    "tiling_height": 512,
-    "tiling_width": 512,
+    "tiling_height": 384,
+    "tiling_width": 384,
     "use_tiling_inf": true
   },
   "max_epochs": 150,
   "opt_sched": {
     "opt": {
       "type": "AdamW",
-      "lr": 5e-5,
+      "lr": 1e-4,
       "weight_decay": 5e-2,
       "betas": [0.9, 0.999],
       "eps": 1e-8
     },
     "sched": {
       "type": "LinearWarmupCosineAnnealingLR",
-      "warmup_epochs": 200,
+      "warmup_epochs": 2500,
       "max_epochs": -1,
       "warmup_start_lr": 1e-8,
-      "eta_min": 5e-5,
+      "eta_min": 1e-4,
       "interval": "step"
     }
   },
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "catce+catsdice_effnetD2_adamw_LR-5e-5_512_1024_{}{}_F{}_miss"
+    "name": "catce+catsdice_convnext_adamw_LR-1e-4_384_768_{}{}_F{}"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 15,
-    "num_workers": 30,
-    "height": 512,
-    "width": 512,
+    "batch_size": 30,
+    "num_workers": 39,
+    "height": 384,
+    "width": 384,
     "num_classes": 6,
-    "resolution": 1024
+    "resolution": 768
   },
   "valid_loader": {
     "train": false,
     "batch_size": 1,
     "num_workers": 4,
-    "height": 512,
-    "width": 512,
+    "height": 384,
+    "width": 384,
     "num_classes": 6,
-    "resolution": 1024
+    "resolution": 768
   },
   "losses": {
     "weights": [1.0, 1.0],

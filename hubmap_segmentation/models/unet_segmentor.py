@@ -16,6 +16,7 @@ avaliable_backbones = {
     'swin': create_swin,
     'effnet': create_effnet,
     'convnext': create_convnext,
+    'convnextB': create_convnext,
     'regnet': create_regnet_y
 }
 
@@ -29,6 +30,13 @@ backboned_unet_args = {
     },
     'convnext': {
         'encoder_out' : [96, 192, 384, 768],
+        'decoder_out' : [256, 256, 128, 128],
+        'upsamples' : [True, True, True, True][::-1],
+        'center_channels' : 256,
+        'last_channels' : 64
+    },
+    'convnextB': {
+        'encoder_out' : [128, 256, 512, 1024],
         'decoder_out' : [256, 256, 128, 128],
         'upsamples' : [True, True, True, True][::-1],
         'center_channels' : 256,
@@ -64,6 +72,7 @@ class UNetSegmentor(nn.Module):
         use_aux_head: bool = False,
         ffc_decoder: bool = False,
         num_classes: int = 1,
+        truncate: int = 0,
         cls_emb_dim: int = 0
     ):
         super(UNetSegmentor, self).__init__()
@@ -75,6 +84,9 @@ class UNetSegmentor(nn.Module):
         upsamples = unet_args['upsamples']
         center_channels = unet_args['center_channels']
         last_channels = unet_args['last_channels']
+
+        if truncate > 0:
+            decoder_out = decoder_out[:-truncate]
 
         self.decoder = UNetDecoder(
             in_dim=encoder_out,
@@ -144,7 +156,7 @@ class UNetSegmentor(nn.Module):
         last, decoder_feats = self.decoder(encoder_feats, cls_emb)
 
         logits = self.final_conv(last)
-        #logits = F.interpolate(logits, size=input_x.shape[2:], mode='bilinear')
+        logits = F.interpolate(logits, size=input_x.shape[2:], mode='bilinear')
 
         if self.num_classes == 1:
             probs = torch.sigmoid(logits)

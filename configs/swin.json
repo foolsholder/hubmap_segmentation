@@ -33,15 +33,16 @@
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "catce+catsdice_swin_adamw_LR-5e-5_512_1024_{}{}_F{}_SA_wo_ch"
+    "name": "catce+catsdice_swin_adamw_LR-5e-5_512_1024_{}{}_F{}_miss"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 6,
-    "num_workers": 8,
+    "batch_size": 15,
+    "num_workers": 30,
     "height": 512,
     "width": 512,
-    "num_classes": 6
+    "num_classes": 6,
+    "resolution": 1024
   },
   "valid_loader": {
     "train": false,
@@ -49,7 +50,8 @@
     "num_workers": 4,
     "height": 512,
     "width": 512,
-    "num_classes": 6
+    "num_classes": 6,
+    "resolution": 1024
   },
   "losses": {
     "weights": [1.0, 1.0],

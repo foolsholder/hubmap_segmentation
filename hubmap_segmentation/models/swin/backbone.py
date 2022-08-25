@@ -9,7 +9,7 @@ from torch import nn
 from torchvision.models.swin_transformer import (
     _log_api_usage_once, partial, SwinTransformerBlock,
     Permute, PatchMerging, _ovewrite_named_param, WeightsEnum,
-    Swin_S_Weights,
+    Swin_S_Weights, Swin_B_Weights
 )
 
 from typing import Dict, Any, Optional, Tuple, List, Sequence, Union, Callable
@@ -192,14 +192,50 @@ def swin_s(*, weights: Optional[Swin_S_Weights] = None, progress: bool = True, *
     )
 
 
-def create_swin(load_weights: str = '') -> SwinTransformerVS:
-    model = swin_s()
+def swin_b(*, weights=None, progress: bool = True, **kwargs: Any) -> SwinTransformerVS:
+    """
+    Constructs a swin_base architecture from
+    `Swin Transformer: Hierarchical Vision Transformer using Shifted Windows <https://arxiv.org/pdf/2103.14030>`_.
+
+    Args:
+        weights (:class:`~torchvision.models.Swin_B_Weights`, optional): The
+            pretrained weights to use. See
+            :class:`~torchvision.models.Swin_B_Weights` below for
+            more details, and possible values. By default, no pre-trained
+            weights are used.
+        progress (bool, optional): If True, displays a progress bar of the
+            download to stderr. Default is True.
+        **kwargs: parameters passed to the ``torchvision.models.swin_transformer.SwinTransformer``
+            base class. Please refer to the `source code
+            <https://github.com/pytorch/vision/blob/main/torchvision/models/swin_transformer.py>`_
+            for more details about this class.
+
+    .. autoclass:: torchvision.models.Swin_B_Weights
+        :members:
+    """
+    weights = Swin_B_Weights.verify(weights)
+
+    return _swin_transformer(
+        patch_size=[4, 4],
+        embed_dim=128,
+        depths=[2, 2, 18, 2],
+        num_heads=[4, 8, 16, 32],
+        window_size=[7, 7],
+        stochastic_depth_prob=0.5,
+        weights=weights,
+        progress=progress,
+        **kwargs,
+    )
+
+
+def create_swin(load_weights: str = '', size: str = 'small') -> SwinTransformerVS:
+    model = swin_s() if size == 'small' else swin_b()
     if load_weights == 'imagenet':
         import os
         model.load_state_dict(
             torch.load(
                 os.path.join(os.environ['PRETRAINED'],
-                'swin_vs_small_imagenet.pth'),
+                f'swin_vs_{size}_imagenet.pth'),
                 map_location='cpu'
             )
         )
