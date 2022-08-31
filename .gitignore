@@ -1,3 +1,5 @@
 *.idea/
 *__pycache__/
 train_sh.sh
+hubmap_segmentation.egg-info
+.eggs

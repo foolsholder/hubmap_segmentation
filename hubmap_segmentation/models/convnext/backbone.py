@@ -27,6 +27,7 @@ class ConvNeXtVS(nn.Module):
         layer_scale: float = 1e-6,
         block: Optional[Callable[..., nn.Module]] = VSCNBlock,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
+        use_norm: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__()
@@ -81,6 +82,12 @@ class ConvNeXtVS(nn.Module):
             self.__setattr__(layer_name, stage_layer)
             self.layers_names += [layer_name]
 
+            if use_norm:
+                norm_name = f'norm_{idx + 1}'
+                layer = nn.LayerNorm(cnf.input_channels)
+                self.__setattr__(norm_name, layer)
+        self.use_norm = use_norm
+
         for m in self.modules():
             if isinstance(m, (nn.Conv2d, nn.Linear)):
                 nn.init.trunc_normal_(m.weight, std=0.02)
@@ -93,7 +100,13 @@ class ConvNeXtVS(nn.Module):
         for idx, layer_name in enumerate(self.layers_names):
             layer = self.__getattr__(layer_name)
             x = layer(x)#.contiguous()
-            res += [x]
+            if self.use_norm:
+                norm_name = f'norm_{idx + 1}'
+                norm = self.__getattr__(norm_name)
+                out_x = norm(x.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
+            else:
+                out_x = x
+            res += [out_x]
             if idx + 1 != len(self.layers_names):
                 x = self.__getattr__(f'stride_{idx + 1}')(x).contiguous()
         return res
@@ -182,8 +195,12 @@ def convnext_base(
     return _convnext_vs(block_setting, stochastic_depth_prob, weights, progress, **kwargs)
 
 
-def create_convnext(load_weights: str = '', size: str = 'small') -> ConvNeXtVS:
-    model = convnext_vs_small() if size == 'small' else convnext_base()
+def create_convnext(
+        load_weights: str = '',
+        size: str = 'small',
+        use_norm: bool = False
+    ) -> ConvNeXtVS:
+    model = convnext_vs_small(use_norm=use_norm) if size == 'small' else convnext_base(use_norm=use_norm)
     if load_weights == 'imagenet':
         import os
         model.load_state_dict(

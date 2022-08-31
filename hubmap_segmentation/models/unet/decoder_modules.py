@@ -148,7 +148,7 @@ class CenterBlock(nn.Module):
         return x
 
 
-from .ffc_modules import FFC_BN_ACT, FFCSE_block
+from hubmap_segmentation.models.ffc_modules import FFC_BN_ACT, FFCSE_block
 
 
 class FFCDecodeBlock(nn.Module):

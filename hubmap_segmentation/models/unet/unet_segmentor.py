@@ -4,10 +4,10 @@ from torch.nn import functional as F
 
 
 from typing import Dict, Any, List, Optional, Tuple, Sequence, Union
-from .swin.backbone import create_swin
-from .effnet.backbone import create_effnet
-from .convnext.backbone import create_convnext
-from .regnet.backbone import create_regnet_y
+from hubmap_segmentation.models.swin.backbone import create_swin
+from hubmap_segmentation.models.effnet.backbone import create_effnet
+from hubmap_segmentation.models.convnext.backbone import create_convnext
+from hubmap_segmentation.models.regnet.backbone import create_regnet_y
 from .unet_decoder import UNetDecoder
 from .decoder_modules import get_timestep_embedding
 

@@ -46,6 +46,7 @@ class SwinTransformerVS(nn.Module):
         attention_dropout: float = 0.0,
         stochastic_depth_prob: float = 0.0,
         num_classes: int = 1000,
+        use_norm: bool = False,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
         block: Optional[Callable[..., nn.Module]] = None,
     ):
@@ -107,6 +108,13 @@ class SwinTransformerVS(nn.Module):
             self.__setattr__(layer_name, stage_layer)
             self.layers_names += [layer_name]
 
+            if use_norm:
+                norm_name = f'norm_{i_stage + 1}'
+                layer = nn.LayerNorm(dim)
+                self.__setattr__(norm_name, layer)
+
+        self.use_norm = use_norm
+
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 nn.init.trunc_normal_(m.weight, std=0.02)
@@ -119,7 +127,15 @@ class SwinTransformerVS(nn.Module):
             for idx, layer_name in enumerate(self.layers_names):
                 layer = self.__getattr__(layer_name)
                 x = layer(x)
-                res += [x.permute(0, 3, 1, 2).contiguous()]
+
+                if self.use_norm:
+                    norm_name = f'norm_{idx + 1}'
+                    norm_layer = self.__getattr__(norm_name)
+                    out_x = norm_layer(x)
+                else:
+                    out_x = x
+
+                res += [out_x.permute(0, 3, 1, 2).contiguous()]
                 if idx + 1 != len(self.layers_names):
                     merge_name = self.merge_names[idx]
                     x = self.__getattr__(merge_name)(x)
@@ -134,6 +150,7 @@ def _swin_transformer(
     window_size: List[int],
     stochastic_depth_prob: float,
     weights: Optional[WeightsEnum],
+    use_norm: bool,
     progress: bool,
     **kwargs: Any,
 ) -> SwinTransformerVS:
@@ -147,6 +164,7 @@ def _swin_transformer(
         num_heads=num_heads,
         window_size=window_size,
         stochastic_depth_prob=stochastic_depth_prob,
+        use_norm=use_norm,
         **kwargs,
     )
 
@@ -228,8 +246,12 @@ def swin_b(*, weights=None, progress: bool = True, **kwargs: Any) -> SwinTransfo
     )
 
 
-def create_swin(load_weights: str = '', size: str = 'small') -> SwinTransformerVS:
-    model = swin_s() if size == 'small' else swin_b()
+def create_swin(
+        load_weights: str = '',
+        size: str = 'small',
+        use_norm: bool = False
+    ) -> SwinTransformerVS:
+    model = swin_s(use_norm=use_norm) if size == 'small' else swin_b(use_norm=use_norm)
     if load_weights == 'imagenet':
         import os
         model.load_state_dict(

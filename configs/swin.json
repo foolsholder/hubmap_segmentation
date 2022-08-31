@@ -33,12 +33,12 @@
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "catce+catsdice_swin_adamw_LR-5e-5_512_1024_{}{}_F{}_miss"
+    "name": "catce+catsdice_swin_adamw_LR-5e-5_512_1024_{}{}_F{}_RRC42"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 15,
-    "num_workers": 30,
+    "batch_size": 8,
+    "num_workers": 44,
     "height": 512,
     "width": 512,
     "num_classes": 6,

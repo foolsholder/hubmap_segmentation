@@ -30,7 +30,7 @@ class SDataset(Dataset):
             fold: Optional[int] = None,
             num_classes: int = 1,
             resolution: int = 1024,
-            prob_miss: float = 0.05
+            prob_miss: float = 1
     ):
         super(SDataset, self).__init__()
         self.num_classes = num_classes
@@ -70,7 +70,7 @@ class SDataset(Dataset):
         self.augs = augs
 
     def __len__(self) -> int:
-        return len(self.df) * (6 if self.train else 1)
+        return len(self.df) * (5 if self.train else 1)
 
     def __getitem__(
             self,
@@ -129,11 +129,12 @@ class SDataset(Dataset):
             image: np.array,
             mask: np.array
     ) -> Dict[str, Union[np.array, torch.Tensor]]:
-        aug = self.augs(image=image, mask=mask)
-        while aug['mask'].sum() < 1.0:
+        x = 0
+        while x < 1.0:
             aug = self.augs(image=image, mask=mask)
             if np.random.rand() < self.prob_miss:
                 break
+            x = aug['mask'].sum()
         return aug
 
 

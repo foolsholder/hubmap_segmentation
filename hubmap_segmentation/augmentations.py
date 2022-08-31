@@ -42,16 +42,21 @@ def get_simple_augmentations(
             [
                 #RandomCrop(height, width, p=1.0),
                 #Morphology
-                RandomCrop(
+                RandomResizedCrop(
                     height=height,
                     width=width,
+                    scale=(0.08, 0.42),  # mean - 0.25
                     always_apply=True
-                ), # 1024x1024 -> 512x512
+                ),
+               # RandomCrop(
+               #     height=height,
+               #     width=width,
+               #     always_apply=True
+               # ), # 1024x1024 -> 512x512
                 RandomRotate90(p=0.5),
                 VerticalFlip(p=0.5),
                 HorizontalFlip(p=0.5),
                 Transpose(p=0.5),
-
 
 
                 ImageCompression(quality_lower=85, quality_upper=95, p=0.5),

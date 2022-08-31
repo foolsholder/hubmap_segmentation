@@ -67,6 +67,15 @@ trainer = pl.Trainer(
             save_top_k=10,
             monitor='dice/wo_lung',
             mode='max'
+        ),
+        pl.callbacks.ModelCheckpoint(
+            dirpath=os.path.join(
+                os.environ['SHUBMAP_EXPS'],
+                config['wandb_cfg']['name']
+            ),
+            save_weights_only=False,
+            save_last=True,
+            save_top_k=-0,
         )
     ],
     logger=wandb_logger
