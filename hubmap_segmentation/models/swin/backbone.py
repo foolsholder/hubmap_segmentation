@@ -100,16 +100,16 @@ class SwinTransformerVS(nn.Module):
             # add patch merging layer
             if i_stage < (len(depths) - 1):
                 merge_layer = PatchMerging(dim, norm_layer)
-                merge_name = f'merge_{i_stage+1}'
+                merge_name = f'merge_{i_stage}'
                 self.__setattr__(merge_name, merge_layer)
                 self.merge_names += [merge_name]
 
-            layer_name = f'layer_{i_stage + 1}'
+            layer_name = f'layer_{i_stage}'
             self.__setattr__(layer_name, stage_layer)
             self.layers_names += [layer_name]
 
             if use_norm:
-                norm_name = f'norm_{i_stage + 1}'
+                norm_name = f'norm{i_stage}'
                 layer = nn.LayerNorm(dim)
                 self.__setattr__(norm_name, layer)
 
@@ -129,7 +129,7 @@ class SwinTransformerVS(nn.Module):
                 x = layer(x)
 
                 if self.use_norm:
-                    norm_name = f'norm_{idx + 1}'
+                    norm_name = f'norm{idx}'
                     norm_layer = self.__getattr__(norm_name)
                     out_x = norm_layer(x)
                 else:
