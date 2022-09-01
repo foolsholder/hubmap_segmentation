@@ -1,7 +1,7 @@
 {
   "model_cfg": {
     "backbone_cfg": {
-      "type": "swin",
+      "type": "convnext",
       "load_weights": "imagenet",
       "use_norm": true
     },
@@ -29,7 +29,7 @@
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "unet_swin_adamw_LR-5e-4_512_1024_{}{}_F{}_RC_FB"
+    "name": "unet_convnext_adamw_LR-5e-4_512_1024_{}{}_F{}_RC_FB"
   },
   "train_loader": {
     "train": true,

@@ -5,9 +5,9 @@ import torch
 from sys import argv
 
 from torchvision.models.swin_transformer import (
-    Swin_B_Weights, swin_b
+    Swin_S_Weights, swin_s
 )
-from hubmap_segmentation.models.swin.backbone import swin_b as our_swin
+from hubmap_segmentation.models.swin.backbone import swin_s as our_swin
 
 
 if __name__ == '__main__':
@@ -16,8 +16,8 @@ if __name__ == '__main__':
     else:
         path_to_save = argv[1]
     sys.path.append('..')
-    torch_model = swin_b(weights=Swin_B_Weights.IMAGENET1K_V1)
-    our_model = our_swin()
+    torch_model = swin_s(weights=Swin_S_Weights.IMAGENET1K_V1)
+    our_model = our_swin(use_norm=False)
 
     our_model.input_conv.load_state_dict(torch_model.features[0].state_dict())
 
@@ -26,9 +26,9 @@ if __name__ == '__main__':
         print(idx, flush=True)
         layer.load_state_dict(torch_model.features[2 * idx + 1].state_dict())
         if idx != 3:
-            merge_layer = our_model.__getattr__(f'merge_{idx + 1}')
+            merge_layer = our_model.__getattr__(f'merge_{idx}')
             merge_layer.load_state_dict(torch_model.features[2 * idx + 2].state_dict())
     torch.save(
         our_model.state_dict(),
-        os.path.join(path_to_save, 'swin_vs_base_imagenet.pth')
+        os.path.join(path_to_save, 'swin_vs_small_imagenet.pth')
     )

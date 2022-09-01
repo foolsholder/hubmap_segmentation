@@ -106,7 +106,7 @@ class ConvNeXtVS(nn.Module):
                 out_x = norm(x.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
             else:
                 out_x = x
-            res += [out_x]
+            res += [out_x.contiguous()]
             if idx + 1 != len(self.layers_names):
                 x = self.__getattr__(f'stride_{idx + 1}')(x).contiguous()
         return res
@@ -208,6 +208,7 @@ def create_convnext(
                 os.path.join(os.environ['PRETRAINED'],
                 f'convnext_vs_{size}_imagenet.pth'),
                 map_location='cpu'
-            )
+            ),
+            strict=False
         )
     return model

@@ -259,6 +259,7 @@ def create_swin(
                 os.path.join(os.environ['PRETRAINED'],
                 f'swin_vs_{size}_imagenet.pth'),
                 map_location='cpu'
-            )
+            ),
+            strict=False
         )
     return model
