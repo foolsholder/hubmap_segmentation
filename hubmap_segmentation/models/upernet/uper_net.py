@@ -38,7 +38,7 @@ class UperNet(nn.Module):
             "logits": logits,
             "probs": probs
         }
-        if self.training:
+        if True or self.training:
             aux_logits = self.auxiliary_head(bb_feats)
             aux_logits = F.interpolate(
                 aux_logits,

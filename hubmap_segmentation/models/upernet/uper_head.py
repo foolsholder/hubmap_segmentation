@@ -39,8 +39,8 @@ class UPerHead(nn.Module):
             padding=1
         )
         # FPN Module
-        self.lateral_convs = nn.ModuleList()
-        self.fpn_convs = nn.ModuleList()
+        self.lateral_convs = []
+        self.fpn_convs = []
         for in_channel in in_channels[:-1]:  # skip the top layer
             l_conv = ConvModule(
                 in_channel,
@@ -55,6 +55,8 @@ class UPerHead(nn.Module):
                 inplace=False)
             self.lateral_convs.append(l_conv)
             self.fpn_convs.append(fpn_conv)
+        self.lateral_convs = nn.Sequential(*self.lateral_convs)
+        self.fpn_convs = nn.Sequential(*self.fpn_convs)
 
         self.fpn_bottleneck = ConvModule(
             len(in_channels) * channels,

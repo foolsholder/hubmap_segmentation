@@ -77,7 +77,7 @@ class UNetSegmentor(nn.Module):
     ):
         super(UNetSegmentor, self).__init__()
         self.num_classes = num_classes
-        self.encoder, unet_args = create_backbone(backbone_cfg)
+        self.backbone, unet_args = create_backbone(backbone_cfg)
 
         encoder_out = unet_args['encoder_out']
         decoder_out = unet_args['decoder_out']
@@ -144,7 +144,7 @@ class UNetSegmentor(nn.Module):
             additional_info: Dict[str, Any]
     ) -> Dict[str, Any]:
         x = input_x
-        encoder_feats = self.encoder(x)
+        encoder_feats = self.backbone(x)
 
         organ_ids = additional_info['organ_id']
         if self.cls_emb_dim > 0:

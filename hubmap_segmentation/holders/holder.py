@@ -40,6 +40,9 @@ class ModelHolder(pl.LightningModule):
     def __init__(
             self,
             config: Dict[str, Any],
+            tiling_height: Optional[int] = None,
+            tiling_width: Optional[int] = None,
+            use_tiling_inf: bool = False,
             smooth: float = 1e-7,
             thr: float = 0.5
     ):
@@ -49,10 +52,6 @@ class ModelHolder(pl.LightningModule):
         self._num_classes = config['model_cfg']['num_classes']
 
         self.segmentor: torch.nn.Module = create_model(config['model_cfg'])
-
-        tiling_height: int = config['holder_cfg']['tiling_height']
-        tiling_width: int = config['holder_cfg']['tiling_width']
-        use_tiling_inf: bool = config['holder_cfg']['use_tiling_inf']
 
         self.tiling_height: int = tiling_height
         self.tiling_width: int = tiling_width
@@ -105,17 +104,16 @@ class ModelHolder(pl.LightningModule):
             self,
             batch_dict: Dict[str, torch.Tensor]
     ) -> Dict[str, Any]:
-        return self._step_logic(batch_dict)
+        return self._step_logic(batch_dict, 'train')
 
     def _step_logic(
             self,
-            batch_dict: Dict[str, torch.Tensor]
+            batch_dict: Dict[str, torch.Tensor],
+            stage: str
     ) -> Dict[str, Any]:
         input_x = batch_dict['input_x']
 
-        stage: str = 'train' if self.segmentor.training else 'valid'
-        self._stage = stage
-        preds: Dict[str, torch.Tensor] = self.forward(input_x, additional_info=batch_dict)
+        preds: Dict[str, torch.Tensor] = self.forward(input_x, additional_info=batch_dict, stage=stage)
 
         if stage != 'valid':
             for loss_name in self.losses_names:
@@ -135,7 +133,7 @@ class ModelHolder(pl.LightningModule):
             batch_dict: Dict[str, torch.Tensor],
             batch_idx: int
     ) -> Dict[str, Any]:
-        preds = self._step_logic(batch_dict)
+        preds = self._step_logic(batch_dict, 'valid')
         for metric_name in self.metrics_names:
             metric = self.__getattr__(metric_name)
             metric.update(preds, batch_dict)
@@ -175,16 +173,17 @@ class ModelHolder(pl.LightningModule):
     def _forward(
             self,
             input_x: torch.Tensor,
-            additional_info: Optional[Dict[str, Any]] = None
+            additional_info: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         return self._forward_impl(input_x, additional_info)
 
     def forward(
             self,
             input_x: torch.Tensor,
-            additional_info: Optional[Dict[str, Any]] = None
+            additional_info: Optional[Dict[str, Any]] = None,
+            stage: str = 'valid'
     ) -> Dict[str, Any]:
-        if self.segmentor.training or not self.use_tiling_inf:
+        if stage != 'valid' or not self.use_tiling_inf:
             preds: Dict[str, torch.Tensor] = self._forward(input_x, additional_info)
         else:
             preds: Dict[str, torch.Tensor] = self.sliding_window(input_x, additional_info)

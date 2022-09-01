@@ -28,12 +28,14 @@ class SDataset(Dataset):
             height: int = 512,
             width: int = 512,
             fold: Optional[int] = None,
+            replicate: int = 5,
             num_classes: int = 1,
             resolution: int = 1024,
             prob_miss: float = 1
     ):
         super(SDataset, self).__init__()
         self.num_classes = num_classes
+        self.replicate = replicate
         self.prob_miss = prob_miss
         if root == '':
             root = os.environ['SDATASET_PATH']
@@ -67,10 +69,29 @@ class SDataset(Dataset):
             augs = get_simple_augmentations(train, height=height, width=width)
         self.norm_tensor = get_norm_tensor_augmentations()
 
+        self.images = []
+        self.targets = []
+
+        for idx in self.df.id:
+            image_id = str(idx)
+            image = np.load(os.path.join(
+                self.root,
+                self.folder_images,
+                image_id + '.npy'
+            ))  # .astype(np.float32)
+            # image = (image / np.max(image) * 255).astype(np.uint8)
+            target = (np.load(os.path.join(
+                self.root,
+                self.folder_masks,
+                image_id + '.npy'
+            )) > 0).astype(np.float32)
+            self.images += [image]
+            self.targets += [target]
+
         self.augs = augs
 
     def __len__(self) -> int:
-        return len(self.df) * (5 if self.train else 1)
+        return len(self.df) * (1 if not self.train else self.replicate)
 
     def __getitem__(
             self,
@@ -79,17 +100,19 @@ class SDataset(Dataset):
         index = index % len(self.df)
         row = self.df.iloc[index]
         image_id = str(row['id'])
-        image = np.load(os.path.join(
-            self.root,
-            self.folder_images,
-            image_id + '.npy'
-        ))#.astype(np.float32)
+        #image = np.load(os.path.join(
+        #    self.root,
+        #    self.folder_images,
+        #    image_id + '.npy'
+        #))#.astype(np.float32)
         #image = (image / np.max(image) * 255).astype(np.uint8)
-        target = (np.load(os.path.join(
-            self.root,
-            self.folder_masks,
-            image_id + '.npy'
-        )) > 0).astype(np.float32)
+        #target = (np.load(os.path.join(
+        #    self.root,
+        #    self.folder_masks,
+        #    image_id + '.npy'
+        #)) > 0).astype(np.float32)
+        image = self.images[index]
+        target = self.targets[index]
         aug_dict = self.get_augmented(image=image, mask=target)
         mask = aug_dict['mask'][None]
         cat_mask = mask.long() * self.organ2id[row['organ']]
@@ -146,6 +169,7 @@ def create_loader(
         width: int = 512,
         fold: Optional[int] = None,
         num_classes: int = 1,
+        replicate: int = 5,
         resolution: int = 1024
     ) -> DataLoader:
     dataset = SDataset(
@@ -154,6 +178,7 @@ def create_loader(
         width=width,
         fold=fold,
         num_classes=num_classes,
+        replicate=replicate,
         resolution=resolution
     )
     return DataLoader(

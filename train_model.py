@@ -7,7 +7,7 @@ import numpy as np
 
 from collections import OrderedDict
 from typing import Dict, Union
-from hubmap_segmentation.holders import ModelHolder
+from hubmap_segmentation.holders import create_holder
 from hubmap_segmentation.sdataset import create_loader_from_cfg
 from pytorch_lightning.loggers import WandbLogger
 
@@ -42,7 +42,10 @@ if 'seed' in config.keys():
             torch.cuda.manual_seed(seed)
             torch.cuda.manual_seed_all(seed)
 
-model_holder = ModelHolder(config)
+holder_cfg = config.pop('holder_cfg')
+holder_cfg['config'] = config
+holder_cfg['model_type'] = config['model_cfg']['type']
+model_holder = create_holder(holder_cfg)
 wandb_logger = WandbLogger(
     **config['wandb_cfg'],
     config=config
@@ -73,7 +76,7 @@ trainer = pl.Trainer(
                 os.environ['SHUBMAP_EXPS'],
                 config['wandb_cfg']['name']
             ),
-            save_weights_only=False,
+            save_weights_only=True,
             save_last=True,
             save_top_k=-0,
         )
