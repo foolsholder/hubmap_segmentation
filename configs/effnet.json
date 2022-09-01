@@ -1,5 +1,6 @@
 {
   "model_cfg": {
+    "type": "unet",
     "backbone_cfg": {
       "type": "effnet",
       "dilation": 1,
@@ -36,7 +37,7 @@
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "catce+catsdice_effnet_adamw_LR-5e-5_512_1024_{}{}_F{}_RRC42"
+    "name": "catce+catsdice_effnet_adamw_LR-5e-5_512_1024_{}{}_F{}_RRC_Pink"
   },
   "train_loader": {
     "train": true,
@@ -44,6 +45,7 @@
     "num_workers": 44,
     "height": 512,
     "width": 512,
+    "replicate": 5,
     "num_classes": 6,
     "resolution": 1024
   },
@@ -53,6 +55,7 @@
     "num_workers": 4,
     "height": 512,
     "width": 512,
+    "replicate": 1,
     "num_classes": 6,
     "resolution": 1024
   },
