@@ -1,15 +1,17 @@
 {
   "model_cfg": {
+    "type": "unet",
     "backbone_cfg": {
       "type": "swin",
-      "load_weights": "imagenet"
+      "use_norm": true
     },
     "use_aux_head": true,
-    "num_classes": 6
+    "num_classes": 6,
+    "pretrained": "from_freeze/unet_swin_adamw_LR-5e-4_512_1024_V4_F0_RC_FB/{best_ckpt}.ckpt"
   },
   "holder_cfg": {
-    "tiling_height": 768,
-    "tiling_width": 768,
+    "tiling_height": 512,
+    "tiling_width": 512,
     "use_tiling_inf": true
   },
   "max_epochs": 150,
@@ -33,14 +35,15 @@
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "RA_catce+catsdice_swin_adamw_LR-5e-5_768_1024_{}{}_F{}"
+    "name": "catce+catsdice_swin_adamw_LR-5e-5_512_1024_{}{}_F{}_RRC_FF"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 3,
-    "num_workers": 8,
-    "height": 768,
-    "width": 768,
+    "batch_size": 8,
+    "num_workers": 11,
+    "height": 512,
+    "width": 512,
+    "replicate": 5,
     "num_classes": 6,
     "resolution": 1024
   },
@@ -48,8 +51,9 @@
     "train": false,
     "batch_size": 1,
     "num_workers": 4,
-    "height": 768,
-    "width": 768,
+    "height": 512,
+    "width": 512,
+    "replicate": 1,
     "num_classes": 6,
     "resolution": 1024
   },

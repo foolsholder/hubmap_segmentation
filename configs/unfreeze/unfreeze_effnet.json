@@ -1,18 +1,16 @@
 {
   "model_cfg": {
+    "type": "unet",
     "backbone_cfg": {
-      "type": "effnet",
-      "dilation": 2,
-      "load_weights": "imagenet"
+      "type": "effnet"
     },
     "use_aux_head": true,
-    "ffc_decoder": false,
-    "cls_emb_dim": 0,
-    "num_classes": 6
+    "num_classes": 6,
+    "pretrained": "from_freeze/unet_effnet_adamw_LR-5e-4_512_1024_V4_F0_RRC_FB/effnet_rrc_fb_f0.ckpt"
   },
   "holder_cfg": {
-    "tiling_height": 768,
-    "tiling_width": 768,
+    "tiling_height": 512,
+    "tiling_width": 512,
     "use_tiling_inf": true
   },
   "max_epochs": 150,
@@ -36,25 +34,27 @@
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "catce+catsdice_effnetD2_adamw_LR-5e-5_768_1536_{}{}_F{}"
+    "name": "catce+catsdice_effnet_adamw_LR-5e-5_512_1024_{}{}_F{}_RRC_FF"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 4,
+    "batch_size": 8,
     "num_workers": 11,
-    "height": 768,
-    "width": 768,
+    "height": 512,
+    "width": 512,
+    "replicate": 5,
     "num_classes": 6,
-    "resolution": 1536
+    "resolution": 1024
   },
   "valid_loader": {
     "train": false,
     "batch_size": 1,
     "num_workers": 4,
-    "height": 768,
-    "width": 768,
+    "height": 512,
+    "width": 512,
+    "replicate": 1,
     "num_classes": 6,
-    "resolution": 1536
+    "resolution": 1024
   },
   "losses": {
     "weights": [1.0, 1.0],

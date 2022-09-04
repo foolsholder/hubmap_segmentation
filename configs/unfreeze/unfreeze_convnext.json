@@ -3,12 +3,11 @@
     "type": "unet",
     "backbone_cfg": {
       "type": "convnext",
-      "load_weights": "imagenet"
+      "use_norm": true
     },
     "use_aux_head": true,
-    "ffc_decoder": false,
-    "cls_emb_dim": 0,
-    "num_classes": 6
+    "num_classes": 6,
+    "pretrained": "from_freeze/unet_convnext_adamw_LR-5e-4_512_1024_V4_F0_RC_FB/{best_ckpt}.ckpt"
   },
   "holder_cfg": {
     "tiling_height": 512,
@@ -36,12 +35,12 @@
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "catce+catsdice_convnext_adamw_LR-5e-5_512_1024_{}{}_F{}_RRC_Pink"
+    "name": "catce+catsdice_convnext_adamw_LR-5e-5_512_1024_{}{}_F{}_RRC_FF"
   },
   "train_loader": {
     "train": true,
     "batch_size": 8,
-    "num_workers": 44,
+    "num_workers": 11,
     "height": 512,
     "width": 512,
     "replicate": 5,

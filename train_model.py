@@ -44,7 +44,8 @@ if 'seed' in config.keys():
 
 holder_cfg = config.pop('holder_cfg')
 holder_cfg['config'] = config
-holder_cfg['model_type'] = config['model_cfg']['type']
+if 'type' in holder_cfg and holder_cfg['type'] != 'base':
+    holder_cfg['model_type'] = config['model_cfg']['type']
 model_holder = create_holder(holder_cfg)
 wandb_logger = WandbLogger(
     **config['wandb_cfg'],

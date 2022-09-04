@@ -1,7 +1,9 @@
 {
   "model_cfg": {
+    "type": "unet",
     "backbone_cfg": {
-      "type": "regnet",
+      "type": "effnet",
+      "dilation": 1,
       "load_weights": "imagenet"
     },
     "use_aux_head": true,
@@ -14,7 +16,7 @@
     "tiling_width": 512,
     "use_tiling_inf": true
   },
-  "max_epochs": 150,
+  "max_epochs": 50,
   "opt_sched": {
     "opt": {
       "type": "AdamW",
@@ -35,15 +37,17 @@
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "catce+catsdice_regnet_adamw_LR-5e-5_512_1024_{}{}_F{}_SA_wo_ch"
+    "name": "catce+catsdice_effnet_adamw_LR-5e-5_512_1024_{}{}_F{}_RRC"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 4,
-    "num_workers": 8,
+    "batch_size": 8,
+    "num_workers": 44,
     "height": 512,
     "width": 512,
-    "num_classes": 6
+    "replicate": 5,
+    "num_classes": 6,
+    "resolution": 1024
   },
   "valid_loader": {
     "train": false,
@@ -51,7 +55,9 @@
     "num_workers": 4,
     "height": 512,
     "width": 512,
-    "num_classes": 6
+    "replicate": 1,
+    "num_classes": 6,
+    "resolution": 1024
   },
   "losses": {
     "weights": [1.0, 1.0],
