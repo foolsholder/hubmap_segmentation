@@ -3,7 +3,7 @@ import random
 
 import cv2
 from albumentations.augmentations.geometric import functional as FGeometric
-from albumentations.augmentations import functional as F
+from albumentations.augmentations.crops import functional as F
 
 
 from .dual import FDualTransform

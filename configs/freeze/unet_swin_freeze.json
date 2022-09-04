@@ -16,7 +16,7 @@
     "tiling_width": 512,
     "use_tiling_inf": true
   },
-  "max_epochs": 100,
+  "max_epochs": 5,
   "opt_sched": {
     "opt": {
       "type": "AdamW",

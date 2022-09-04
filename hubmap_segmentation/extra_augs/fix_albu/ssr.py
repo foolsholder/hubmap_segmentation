@@ -8,7 +8,7 @@ from albumentations.core.transforms_interface import to_tuple
 
 
 from .dual import FDualTransform
-from albumentations.augmentations import functional as F
+from albumentations.augmentations.geometric import functional as F
 
 
 class FShiftScaleRotate(FDualTransform):
