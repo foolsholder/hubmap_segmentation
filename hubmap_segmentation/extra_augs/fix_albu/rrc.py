@@ -1,57 +1,28 @@
 import math
 import random
+import PIL
 
-import cv2
-from albumentations.augmentations.geometric import functional as FGeometric
 from albumentations.augmentations.crops import functional as F
-
-
 from .dual import FDualTransform
+from .functional import resize
 
 
 class _FBaseRandomSizedCrop(FDualTransform):
     # Base class for RandomSizedCrop and RandomResizedCrop
 
-    def __init__(self, height, width, interpolation=cv2.INTER_LINEAR, always_apply=False, p=1.0):
+    def __init__(self, height, width, interpolation=PIL.Image.Resampling.BILINEAR, always_apply=False, p=1.0):
         super(_FBaseRandomSizedCrop, self).__init__(always_apply, p)
         self.height = height
         self.width = width
         self.interpolation = interpolation
 
-    def apply(self, img, crop_height=0, crop_width=0, h_start=0, w_start=0, interpolation=cv2.INTER_LINEAR, **params):
+    def apply(self, img, crop_height=0, crop_width=0, h_start=0, w_start=0, interpolation=PIL.Image.Resampling.BILINEAR, **params):
         crop = F.random_crop(img, crop_height, crop_width, h_start, w_start)
-        return FGeometric.resize(crop, self.height, self.width, interpolation)
-
-    def apply_to_bbox(self, bbox, crop_height=0, crop_width=0, h_start=0, w_start=0, rows=0, cols=0, **params):
-        return F.bbox_random_crop(bbox, crop_height, crop_width, h_start, w_start, rows, cols)
-
-    def apply_to_keypoint(self, keypoint, crop_height=0, crop_width=0, h_start=0, w_start=0, rows=0, cols=0, **params):
-        keypoint = F.keypoint_random_crop(keypoint, crop_height, crop_width, h_start, w_start, rows, cols)
-        scale_x = self.width / crop_width
-        scale_y = self.height / crop_height
-        keypoint = FGeometric.keypoint_scale(keypoint, scale_x, scale_y)
-        return keypoint
+        #return FGeometric.resize(crop, self.height, self.width, interpolation)
+        return resize(crop, self.height, self.width, interpolation)
 
 
 class FRandomResizedCrop(_FBaseRandomSizedCrop):
-    """Torchvision's variant of crop a random part of the input and rescale it to some size.
-
-    Args:
-        height (int): height after crop and resize.
-        width (int): width after crop and resize.
-        scale ((float, float)): range of size of the origin size cropped
-        ratio ((float, float)): range of aspect ratio of the origin aspect ratio cropped
-        interpolation (OpenCV flag): flag that is used to specify the interpolation algorithm. Should be one of:
-            cv2.INTER_NEAREST, cv2.INTER_LINEAR, cv2.INTER_CUBIC, cv2.INTER_AREA, cv2.INTER_LANCZOS4.
-            Default: cv2.INTER_LINEAR.
-        p (float): probability of applying the transform. Default: 1.
-
-    Targets:
-        image, mask, bboxes, keypoints
-
-    Image types:
-        uint8, float32
-    """
 
     def __init__(
         self,
@@ -59,7 +30,7 @@ class FRandomResizedCrop(_FBaseRandomSizedCrop):
         width,
         scale=(0.08, 1.0),
         ratio=(0.75, 1.3333333333333333),
-        interpolation=cv2.INTER_LINEAR,
+        interpolation=PIL.Image.Resampling.BILINEAR,
         always_apply=False,
         p=1.0,
     ):

@@ -2,7 +2,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import cv2
 import numpy as np
-
+import PIL
 
 from albumentations.core.transforms_interface import BasicTransform
 
@@ -38,7 +38,7 @@ class FDualTransform(BasicTransform):
         return [self.apply_to_keypoint(tuple(keypoint[:4]), **params) + tuple(keypoint[4:]) for keypoint in keypoints]  # type: ignore # noqa
 
     def apply_to_mask(self, img: np.ndarray, **params) -> np.ndarray:
-        return self.apply(img, **{k: cv2.INTER_NEAREST_EXACT if k == "interpolation" else v for k, v in params.items()})
+        return self.apply(img, **{k: PIL.Image.Resampling.NEAREST if k == "interpolation" else v for k, v in params.items()})
 
     def apply_to_masks(self, masks: Sequence[np.ndarray], **params) -> List[np.ndarray]:
         return [self.apply_to_mask(mask, **params) for mask in masks]

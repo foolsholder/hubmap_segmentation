@@ -1,5 +1,7 @@
 import albumentations as A
 import cv2
+import PIL
+import torchvision
 
 from albumentations import (
     Resize, Normalize, Compose, Transpose,
@@ -48,7 +50,7 @@ def get_simple_augmentations(
                 FRandomResizedCrop(
                     height=height,
                     width=width,
-                    interpolation=cv2.INTER_LANCZOS4,
+                    interpolation=PIL.Image.Resampling.BILINEAR,
                     scale=(0.20, 0.30),  # mean - 0.25
                     always_apply=True
                 ),
@@ -87,10 +89,15 @@ def get_simple_augmentations(
                     ],
                     p=0.5,
                 ),
-                FShiftScaleRotate(shift_limit=0.15, scale_limit=0.2,
-                                 rotate_limit=(-45, 45),
-                                 interpolation=cv2.INTER_LANCZOS4,
-                                 border_mode=0, p=0.7),
+                FShiftScaleRotate(
+                    width=width,
+                    height=height,
+                    p=0.7,
+                    degrees=45,
+                    translate=(0.15, 0.15),
+                    scale=(0.2, 0.2),
+                    interpolation=torchvision.transforms.InterpolationMode.BILINEAR
+                ),
 
                 Normalize(),
                 ToTensorV2()
