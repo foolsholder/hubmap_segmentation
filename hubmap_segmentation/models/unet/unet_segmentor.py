@@ -108,7 +108,7 @@ class UNetSegmentor(nn.Module):
                 #bias=False
             ),
             nn.BatchNorm2d(last_channels),
-            nn.ReLU(inplace=True),
+            nn.GELU(),
             nn.Conv2d(last_channels, num_classes, kernel_size=1)
         )
         # 6 64 1 1
@@ -123,7 +123,7 @@ class UNetSegmentor(nn.Module):
                     bias=False
                 ),
                 nn.BatchNorm2d(last_channels),
-                nn.ReLU(inplace=True),
+                nn.GELU(),
                 nn.Conv2d(last_channels, num_classes, kernel_size=1)
             )
 
@@ -132,10 +132,10 @@ class UNetSegmentor(nn.Module):
             self.emb_layer = nn.Sequential(
                 nn.Linear(cls_emb_dim, cls_emb_dim * 2, bias=False),
                 nn.BatchNorm1d(cls_emb_dim * 2),
-                nn.ReLU(inplace=True),
+                nn.GELU(),
                 nn.Linear(cls_emb_dim * 2, cls_emb_dim, bias=False),
                 nn.BatchNorm1d(cls_emb_dim),
-                nn.ReLU(inplace=True)
+                nn.GELU()
             )
 
     def forward(

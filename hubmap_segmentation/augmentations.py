@@ -62,11 +62,11 @@ def get_simple_augmentations(
                 HorizontalFlip(p=0.5),
                 Transpose(p=0.5),
 
-                #ScikitPink(p=0.5),
+                ScikitPink(p=0.5),
 
                 ImageCompression(quality_lower=85, quality_upper=95, p=0.5),
                 # NEW
-                ChannelShuffle(p=0.75),
+                # ChannelShuffle(p=0.75),
                 RGBShift(p=0.75),
                 CLAHE(p=0.75), #NEW
                 OneOf([

@@ -17,36 +17,15 @@ def conv1x1(in_channel, out_channel): #not change resolution
                       kernel_size=1,stride=1,padding=0,dilation=1,bias=False)
 
 
-def init_weight(m):
-    classname = m.__class__.__name__
-    if classname.find('Conv') != -1:
-        #nn.init.xavier_uniform_(m.weight, gain=1)
-        #nn.init.xavier_normal_(m.weight, gain=1)
-        #nn.init.kaiming_uniform_(m.weight, mode='fan_in', nonlinearity='relu')
-        nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='relu')
-        #nn.init.orthogonal_(m.weight, gain=1)
-        if m.bias is not None:
-            m.bias.data.zero_()
-    elif classname.find('Batch') != -1:
-        m.weight.data.normal_(1,0.02)
-        m.bias.data.zero_()
-    elif classname.find('Linear') != -1:
-        nn.init.orthogonal_(m.weight, gain=1)
-        if m.bias is not None:
-            m.bias.data.zero_()
-    elif classname.find('Embedding') != -1:
-        nn.init.orthogonal_(m.weight, gain=1)
-
-
 class ChannelAttentionModule(nn.Module):
     def __init__(self, in_channel, reduction):
         super().__init__()
         self.global_maxpool = nn.AdaptiveMaxPool2d(1)
         self.global_avgpool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Sequential(
-            conv1x1(in_channel, in_channel//reduction).apply(init_weight),
-            nn.ReLU(True),
-            conv1x1(in_channel//reduction, in_channel).apply(init_weight)
+            conv1x1(in_channel, in_channel//reduction),
+            nn.GELU(),
+            conv1x1(in_channel//reduction, in_channel)
         )
 
     def forward(self, inputs):
@@ -61,7 +40,7 @@ class ChannelAttentionModule(nn.Module):
 class SpatialAttentionModule(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv3x3 = conv3x3(2,1).apply(init_weight)
+        self.conv3x3 = conv3x3(2,1)
 
     def forward(self, inputs):
         x1,_ = torch.max(inputs, dim=1, keepdim=True)
@@ -96,41 +75,40 @@ class DecodeBlock(nn.Module):
         self.upsample = nn.Sequential()
         if upsample:
             self.upsample.add_module('upsample',nn.Upsample(scale_factor=2, mode='bilinear'))
-        self.conv3x3_1 = conv3x3(in_channel, in_channel).apply(init_weight)
-        self.bn1 = nn.BatchNorm2d(in_channel).apply(init_weight)
+        self.conv3x3_1 = conv3x3(in_channel, in_channel)
+        self.bn1 = nn.BatchNorm2d(in_channel)
 
-        self.conv3x3_2 = conv3x3(in_channel, out_channel).apply(init_weight)
-        self.bn2 = nn.BatchNorm2d(out_channel).apply(init_weight)
+        self.conv3x3_2 = conv3x3(in_channel, out_channel)
+        self.bn2 = nn.BatchNorm2d(out_channel)
         self.cbam = CBAM(out_channel, reduction=16)
 
-        self.conv1x1_skip = conv1x1(in_channel, out_channel).apply(init_weight)
-        self.bn_skip = nn.BatchNorm2d(out_channel).apply(init_weight)
+        self.conv1x1_skip = conv1x1(in_channel, out_channel)
+        self.bn_skip = nn.BatchNorm2d(out_channel)
 
         self.cls_emb_dim = cls_emb_dim
         if cls_emb_dim > 0:
             self.cls_emb_dense = nn.Sequential(
                 nn.Linear(cls_emb_dim, out_channel, bias=False),
                 nn.BatchNorm1d(out_channel),
-                nn.ReLU(inplace=True)
+                nn.GELU()
             )
 
     def forward(self, inputs, cls_emb: Optional[torch.Tensor] = None):
         # conv -> bn -> act
         skip_connection = self.upsample(inputs)
 
-        #x  = F.relu(self.bn1(inputs))
-        x  = skip_connection
+        x = skip_connection
 
-        x  = F.relu(self.bn1(self.conv3x3_1(x)), inplace=True)
+        x = F.gelu(self.bn1(self.conv3x3_1(x)))
 
         x = self.bn2(self.conv3x3_2(x))
 
         if self.cls_emb_dim > 0:
             x = x + self.cls_emb_dense(cls_emb)[:, :, None, None]
 
-        x  = self.cbam(x)
-        x = F.relu(x)
-        x = x + F.relu(self.bn_skip(self.conv1x1_skip(skip_connection))) #shortcut
+        x = self.cbam(x)
+        x = F.gelu(x)
+        x = x + F.gelu(self.bn_skip(self.conv1x1_skip(skip_connection))) #shortcut
 
         return x
 
@@ -138,13 +116,13 @@ class DecodeBlock(nn.Module):
 class CenterBlock(nn.Module):
     def __init__(self, in_channel, out_channel):
         super().__init__()
-        self.conv = conv3x3(in_channel, out_channel).apply(init_weight)
+        self.conv = conv3x3(in_channel, out_channel)
         self.bn = nn.BatchNorm2d(out_channel)
 
     def forward(self, inputs):
         x = self.conv(inputs)
         x = self.bn(x)
-        x = F.relu(x, inplace=True)
+        x = F.gelu(x)
         return x
 
 
