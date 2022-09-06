@@ -190,7 +190,22 @@ class ModelHolder(pl.LightningModule):
         return preds
 
     def configure_optimizers(self):
-        return create_opt_shed(self._config['opt_sched'], self.segmentor.parameters())
+        params = [
+            {
+                'params': self.segmentor.backbone.parameters(),
+                'lr': self._config['opt_sched']['opt']['lr'] * 0.1
+            },
+            {
+                'params': self.segmentor.decoder.parameters(),
+            },
+            {
+                'params': self.segmentor.final_conv.parameters(),
+            },
+            {
+                'params': self.segmentor.aux_head.parameters(),
+            },
+        ]
+        return create_opt_shed(self._config['opt_sched'], params)
 
     def sliding_window(
             self,

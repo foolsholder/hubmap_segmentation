@@ -35,8 +35,8 @@
   },
   "train_loader": {
     "train": true,
-    "batch_size": 20,
-    "num_workers": 30,
+    "batch_size": 15,
+    "num_workers": 11,
     "height": 512,
     "width": 512,
     "num_classes": 6,
@@ -46,7 +46,7 @@
   "valid_loader": {
     "train": false,
     "batch_size": 1,
-    "num_workers": 12,
+    "num_workers": 11,
     "height": 512,
     "width": 512,
     "replicate": 1,

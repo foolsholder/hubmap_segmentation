@@ -7,18 +7,18 @@
     },
     "use_aux_head": true,
     "num_classes": 6,
-    "pretrained": "from_freeze/unet_convnext_adamw_LR-5e-4_512_1024_V4_F0_RC_FB/{best_ckpt}.ckpt"
+    "pretrained": "from_freeze/unet_convnext_adamw_LR-5e-4_512_1024_V4_F0_RC_FB/last.ckpt"
   },
   "holder_cfg": {
     "tiling_height": 512,
     "tiling_width": 512,
     "use_tiling_inf": true
   },
-  "max_epochs": 150,
+  "max_epochs": 50,
   "opt_sched": {
     "opt": {
       "type": "AdamW",
-      "lr": 5e-5,
+      "lr": 1e-4,
       "weight_decay": 5e-2,
       "betas": [0.9, 0.999],
       "eps": 1e-8

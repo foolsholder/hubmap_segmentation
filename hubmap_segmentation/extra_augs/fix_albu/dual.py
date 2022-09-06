@@ -38,7 +38,12 @@ class FDualTransform(BasicTransform):
         return [self.apply_to_keypoint(tuple(keypoint[:4]), **params) + tuple(keypoint[4:]) for keypoint in keypoints]  # type: ignore # noqa
 
     def apply_to_mask(self, img: np.ndarray, **params) -> np.ndarray:
-        return self.apply(img, **{k: PIL.Image.Resampling.NEAREST if k == "interpolation" else v for k, v in params.items()})
+        max_elem = np.max(img)
+        if max_elem > 0:
+            img = img / max_elem
+        augmented_mask = self.apply(img, **{k: cv2.INTER_LINEAR if k == "interpolation" else v for k, v in params.items()})
+        augmented_mask = (augmented_mask > 0).astype(img.dtype) * max_elem
+        return augmented_mask
 
     def apply_to_masks(self, masks: Sequence[np.ndarray], **params) -> List[np.ndarray]:
         return [self.apply_to_mask(mask, **params) for mask in masks]

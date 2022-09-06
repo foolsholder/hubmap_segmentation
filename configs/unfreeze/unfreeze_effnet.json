@@ -6,7 +6,7 @@
     },
     "use_aux_head": true,
     "num_classes": 6,
-    "pretrained": "from_freeze/unet_effnet_adamw_LR-5e-4_512_1024_V4_F0_RRC_FB/effnet_rrc_fb_f0.ckpt"
+    "pretrained": "from_freeze/unet_effnet_adamw_LR-5e-4_512_1024_V4_F0_RC_FB/last.ckpt"
   },
   "holder_cfg": {
     "tiling_height": 512,

@@ -3,7 +3,7 @@
     "type": "unet",
     "backbone_cfg": {
       "type": "effnet",
-      "dilation": 1,
+      "dilation": 2,
       "load_weights": "imagenet"
     },
     "use_aux_head": true,
@@ -37,7 +37,7 @@
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "catce+catsdice_effnet_adamw_LR-1e-4_512_1024_{}{}_F{}_RRC"
+    "name": "catce+catsdice_effnetD2_adamw_LR-1e-4_512_1024_{}{}_F{}_RRC"
   },
   "train_loader": {
     "train": true,

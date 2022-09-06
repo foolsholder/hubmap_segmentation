@@ -12,14 +12,17 @@ from albumentations import (
     RandomGamma, RandomBrightness, RandomBrightnessContrast,
     GaussianBlur, CLAHE, RGBShift, ImageCompression,
     Cutout, CoarseDropout, GaussNoise, ChannelShuffle, ToGray, OpticalDistortion,
-    Normalize, OneOf, NoOp
+    Normalize, OneOf, NoOp, ShiftScaleRotate, RandomResizedCrop
 )
 from albumentations.pytorch import ToTensorV2
 from typing import Union, Dict, Any, Optional
 from .extra_augs import RandStainNA, UniformNoise, ScikitPink
 
 
-from .extra_augs.fix_albu import FRandomResizedCrop, FShiftScaleRotate
+from .extra_augs.fix_albu import (
+    FRandomResizedCrop, FShiftScaleRotate, FOpticalDistortion,
+    FGridDistortion, FElasticTransform
+)
 
 
 def get_norm_tensor_augmentations() -> Compose:
@@ -50,7 +53,7 @@ def get_simple_augmentations(
                 FRandomResizedCrop(
                     height=height,
                     width=width,
-                    interpolation=PIL.Image.Resampling.BILINEAR,
+                    interpolation=cv2.INTER_LANCZOS4,
                     scale=(0.20, 0.30),  # mean - 0.25
                     always_apply=True
                 ),
@@ -64,39 +67,46 @@ def get_simple_augmentations(
                 HorizontalFlip(p=0.5),
                 Transpose(p=0.5),
 
-                ScikitPink(p=0.5),
+                #ScikitPink(p=0.5),
 
                 ImageCompression(quality_lower=85, quality_upper=95, p=0.5),
                 # NEW
                 # ChannelShuffle(p=0.75),
                 RGBShift(p=0.75),
-                CLAHE(p=0.75), #NEW
+                CLAHE(p=0.75),
                 OneOf([
                     RandomGamma(p=0.5),
                     RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.4,
-                                             brightness_by_max=True,p=0.5),
+                                             brightness_by_max=True, p=0.5),
+
+                    HueSaturationValue(hue_shift_limit=60, sat_shift_limit=50,
+                                       val_shift_limit=50, p=0.75)
                     ],
                     p=0.75
                 ),
-                HueSaturationValue(hue_shift_limit=40, sat_shift_limit=40,
-                                   val_shift_limit=25, p=0.75),
+                OneOf(
+                    [
+                        FOpticalDistortion(interpolation=cv2.INTER_LANCZOS4, border_mode=0),
+                        FElasticTransform(interpolation=cv2.INTER_LANCZOS4, border_mode=0),
+                        FGridDistortion(interpolation=cv2.INTER_LANCZOS4, border_mode=0)
+                    ],
+                    p=0.5
+                ),
 
 
                 OneOf(
                     [
-                        GaussianBlur(blur_limit=(7, 19), p=0.5),
-                        GaussNoise(var_limit=30, p=0.5, per_channel=True),
+                        GaussianBlur(blur_limit=(3, 7), p=0.5),
+                        GaussNoise(var_limit=10, p=0.5, per_channel=True),
                     ],
                     p=0.5,
                 ),
                 FShiftScaleRotate(
-                    width=width,
-                    height=height,
-                    p=0.7,
-                    degrees=45,
-                    translate=(0.15, 0.15),
-                    scale=(0.2, 0.2),
-                    interpolation=torchvision.transforms.InterpolationMode.BILINEAR
+                    rotate_limit=45,
+                    shift_limit=0.15,
+                    scale_limit=0.2,
+                    interpolation=cv2.INTER_LANCZOS4,
+                    border_mode=0
                 ),
 
                 Normalize(),

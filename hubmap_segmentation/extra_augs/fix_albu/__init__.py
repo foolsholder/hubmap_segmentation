@@ -1,2 +1,2 @@
-from .rrc import FRandomResizedCrop
-from .ssr import FShiftScaleRotate
+from .rrc import *
+from .ssr import *
