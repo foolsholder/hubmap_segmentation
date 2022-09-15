@@ -4,8 +4,8 @@ import sys
 import torch
 from sys import argv
 
-from torchvision.models.swin_transformer import (
-    Swin_S_Weights, swin_s
+from hubmap_segmentation.models.swin.basic_modules import (
+    Swin_V2_S_Weights, swin_v2_s
 )
 from hubmap_segmentation.models.swin.backbone import swin_s as our_swin
 
@@ -16,8 +16,8 @@ if __name__ == '__main__':
     else:
         path_to_save = argv[1]
     sys.path.append('..')
-    torch_model = swin_s(weights=Swin_S_Weights.IMAGENET1K_V1)
-    our_model = our_swin(use_norm=False)
+    torch_model = swin_v2_s(weights=Swin_V2_S_Weights.IMAGENET1K_V1)
+    our_model = our_swin()
 
     our_model.input_conv.load_state_dict(torch_model.features[0].state_dict())
 

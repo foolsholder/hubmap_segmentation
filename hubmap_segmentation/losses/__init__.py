@@ -7,6 +7,7 @@ from .catce_loss import CATCELoss
 from .lovasz_hinge_loss import LovaszHingeLoss
 from .tversky_loss import TverskyLoss
 from .unified_focal_loss import SymmetricUnifiedFocalLoss
+from .distill_logits_mse import DistillLoss
 
 __all__ = [
     "LossMetric",
@@ -17,5 +18,6 @@ __all__ = [
     "CatSoftDiceLoss",
     "CatFocalLoss",
     "CATCELoss",
-    "NLSDLoss"
+    "NLSDLoss",
+    "DistillLoss"
 ]

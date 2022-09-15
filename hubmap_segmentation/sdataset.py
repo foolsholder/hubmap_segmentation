@@ -31,7 +31,7 @@ class SDataset(Dataset):
             replicate: int = 5,
             num_classes: int = 1,
             resolution: int = 1024,
-            prob_miss: float = 1
+            prob_miss: float = 0.05
     ):
         super(SDataset, self).__init__()
         self.num_classes = num_classes
@@ -162,15 +162,16 @@ class SDataset(Dataset):
 
 
 def create_loader(
-        train: bool = True,
         batch_size: int = 4,
         num_workers: int = 4,
+        train: bool = True,
         height: int = 512,
         width: int = 512,
         fold: Optional[int] = None,
         num_classes: int = 1,
         replicate: int = 5,
-        resolution: int = 1024
+        resolution: int = 1024,
+        prob_miss: float = 0.05
     ) -> DataLoader:
     dataset = SDataset(
         train,
@@ -179,7 +180,8 @@ def create_loader(
         fold=fold,
         num_classes=num_classes,
         replicate=replicate,
-        resolution=resolution
+        resolution=resolution,
+        prob_miss=prob_miss
     )
     return DataLoader(
         dataset,

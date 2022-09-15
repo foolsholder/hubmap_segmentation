@@ -60,6 +60,7 @@ trainer = pl.Trainer(
     sync_batchnorm=True,
     log_every_n_steps=config['log_every_n_steps'],
     gradient_clip_val=config['gradient_clip_val'],
+    accumulate_grad_batches=1,
     callbacks=[
         pl.callbacks.LearningRateMonitor(logging_interval='step'),
         pl.callbacks.ModelCheckpoint(

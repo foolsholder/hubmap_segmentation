@@ -7,7 +7,6 @@ from typing import Dict, Any, List, Optional, Tuple, Sequence, Union
 from hubmap_segmentation.models.swin.backbone import create_swin
 from hubmap_segmentation.models.effnet.backbone import create_effnet
 from hubmap_segmentation.models.convnext.backbone import create_convnext
-from hubmap_segmentation.models.regnet.backbone import create_regnet_y
 from .unet_decoder import UNetDecoder
 from .decoder_modules import get_timestep_embedding
 
@@ -15,43 +14,27 @@ from .decoder_modules import get_timestep_embedding
 avaliable_backbones = {
     'swin': create_swin,
     'effnet': create_effnet,
-    'convnext': create_convnext,
-    'convnextB': create_convnext,
-    'regnet': create_regnet_y
+    'convnext': create_convnext
 }
 
 backboned_unet_args = {
     'swin': {
         'encoder_out' : [96, 192, 384, 768],
-        'decoder_out' : [256, 256, 128, 128],
+        'decoder_out' : [256, 256, 256, 256],
         'upsamples' : [True, True, True, True][::-1],
         'center_channels' : 256,
         'last_channels' : 64
     },
     'convnext': {
         'encoder_out' : [96, 192, 384, 768],
-        'decoder_out' : [256, 256, 128, 128],
-        'upsamples' : [True, True, True, True][::-1],
-        'center_channels' : 256,
-        'last_channels' : 64
-    },
-    'convnextB': {
-        'encoder_out' : [128, 256, 512, 1024],
-        'decoder_out' : [256, 256, 128, 128],
-        'upsamples' : [True, True, True, True][::-1],
-        'center_channels' : 256,
-        'last_channels' : 64
-    },
-    'regnet': {
-        'encoder_out' : [224, 448, 896, 2016], # 2048
-        'decoder_out' : [256, 256, 128, 128],
+        'decoder_out' : [256, 256, 256, 256],
         'upsamples' : [True, True, True, True][::-1],
         'center_channels' : 256,
         'last_channels' : 64
     },
     'effnet': {
         'encoder_out' : [24, 48, 80, 160, 176, 304, 512],
-        'decoder_out' : [512, 320, 176, 160, 120, 90, 64],
+        'decoder_out' : [256, 256, 256, 128, 128, 128, 128],
         'upsamples' : [False, True, True, True, False, True, False][::-1],
         'center_channels' : 256,
         'last_channels' : 64
@@ -108,7 +91,7 @@ class UNetSegmentor(nn.Module):
                 #bias=False
             ),
             nn.BatchNorm2d(last_channels),
-            nn.GELU(),
+            nn.ELU(inplace=True),
             nn.Conv2d(last_channels, num_classes, kernel_size=1)
         )
         # 6 64 1 1
@@ -123,7 +106,7 @@ class UNetSegmentor(nn.Module):
                     bias=False
                 ),
                 nn.BatchNorm2d(last_channels),
-                nn.GELU(),
+                nn.ELU(inplace=True),
                 nn.Conv2d(last_channels, num_classes, kernel_size=1)
             )
 
@@ -132,10 +115,10 @@ class UNetSegmentor(nn.Module):
             self.emb_layer = nn.Sequential(
                 nn.Linear(cls_emb_dim, cls_emb_dim * 2, bias=False),
                 nn.BatchNorm1d(cls_emb_dim * 2),
-                nn.GELU(),
+                nn.ELU(inplace=True),
                 nn.Linear(cls_emb_dim * 2, cls_emb_dim, bias=False),
                 nn.BatchNorm1d(cls_emb_dim),
-                nn.GELU()
+                nn.ELU(inplace=True)
             )
 
     def forward(

@@ -12,6 +12,20 @@
     "cls_emb_dim": 0,
     "num_classes": 6
   },
+  "teacher_cfg": {
+    "type": "unet",
+    "backbone_cfg": {
+      "type": "effnet",
+      "dilation": 1,
+      "load_weights": "imagenet"
+    },
+    "pretrained": "catce+catsdice_effnetT1_adamw_LR-1e-4_512_1024_V4_F0_RRC/avg_top10.ckpt",
+    "use_aux_head": true,
+    "ffc_decoder": false,
+    "truncate": 1,
+    "cls_emb_dim": 0,
+    "num_classes": 6
+  },
   "holder_cfg": {
     "tiling_height": 512,
     "tiling_width": 512,
@@ -21,8 +35,8 @@
   "opt_sched": {
     "opt": {
       "type": "AdamW",
-      "lr": 5e-5,
-      "weight_decay": 1e-2,
+      "lr": 1e-4,
+      "weight_decay": 5e-2,
       "betas": [0.9, 0.999],
       "eps": 1e-8
     },
@@ -31,25 +45,24 @@
       "warmup_epochs": 200,
       "max_epochs": -1,
       "warmup_start_lr": 1e-8,
-      "eta_min": 5e-5,
+      "eta_min": 1e-4,
       "interval": "step"
     }
   },
   "wandb_cfg": {
     "project": "hubmap",
     "entity": "dreamtigers",
-    "name": "catce+catsdice_effnetT1_adamw_LR-5e-5_512_1024_{}{}_F{}_RRC"
+    "name": "catce+catsdice_effnetT1_adamw_LR-1e-4_512_1024_{}{}_F{}_RRC"
   },
   "train_loader": {
     "train": true,
-    "batch_size": 6,
+    "batch_size": 11,
     "num_workers": 20,
     "height": 512,
     "width": 512,
-    "replicate": 6,
+    "replicate": 22,
     "num_classes": 6,
-    "resolution": 1024,
-    "prob_miss": 0.1
+    "resolution": 1024
   },
   "valid_loader": {
     "train": false,
@@ -62,10 +75,11 @@
     "resolution": 1024
   },
   "losses": {
-    "weights": [3.0, 1.0],
+    "weights": [3.0, 1.0, 0.5],
     "names": [
         "cat_soft_dice",
-        "catce"
+        "catce",
+        "distill_logits_mse"
     ],
     "aux": 0.4
   },

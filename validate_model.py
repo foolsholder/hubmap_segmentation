@@ -7,18 +7,15 @@ from hubmap_segmentation.sdataset import create_loader
 
 config = {
     'model_cfg': {
+        "type": "unet",
         "backbone_cfg": {
           "type": "effnet",
-          "load_weights": "imagenet"
+          "load_weights": ""
         },
-        "use_aux_head": False,
+        "use_aux_head": True,
+        "truncate": 1,
         "num_classes": 6
-    },
-    "holder_cfg": {
-        "tiling_height": 512,
-        "tiling_width": 512,
-        "use_tiling_inf": True
-    },
+    }
 }
 
 if False:
@@ -60,19 +57,22 @@ model_holder = EnsembleDifferent(
     ckpt_path_list=[
         os.path.join(
             os.environ['SHUBMAP_EXPS'],
-            'tmp',
-            'epoch_effnet_f0.ckpt'
+            'catce+catsdice_effnetT1_adamw_LR-1e-4_512_1024_A3_F0_RRC',
+            'avg_top10.ckpt'
         )
     ],
+    tiling_height=1024,
+    tiling_width=1024,
+    use_tiling_inf=True,
     weights=weights,
     tta_list=[
         ('flip', [-2]),
-        #('flip', [-1]),
-        #('flip', [-1, -2]),
-        #('transpose', None),
+        ('flip', [-1]),
+        ('flip', [-1, -2]),
+        ('transpose', None),
         ('rotate90', 1),
-        #('rotate90', 2),
-        #('rotate90', 3),
+        ('rotate90', 2),
+        ('rotate90', 3),
     ],
     yet_another_holders=aux_holders
 )
@@ -87,9 +87,11 @@ trainer.validate(
     dataloaders=create_loader(
         train=False,
         batch_size=1,
-        num_workers=2,
+        num_workers=1,
         height=512,
         width=512,
+        num_classes=6,
+        resolution=1024,
         fold=0
     )
 )

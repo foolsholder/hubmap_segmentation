@@ -24,7 +24,8 @@ class TTAHolder(ModelHolder):
     def _forward(
             self,
             input_x: torch.Tensor,
-            additional_info: Optional[Dict[str, Any]] = None
+            additional_info: Optional[Dict[str, Any]] = None,
+            stage: str = 'valid'
     ) -> Dict[str, Any]:
         """
         only 'probs' is matter
@@ -72,8 +73,9 @@ def _clear_segmentor_prefix(state_dict: Dict[str, Any]) -> Dict[str, Any]:
         res = type(state_dict)()
         str_patt = 'segmentor.'
         for k, v in state_dict.items():
-            new_k = k[len(str_patt):]
-            res[new_k] = v
+            if str_patt in k:
+                new_k = k[len(str_patt):]
+                res[new_k] = v
         return res
 
 
@@ -101,7 +103,8 @@ class EnsembleHolder(TTAHolder):
     def _forward_impl(
             self,
             input_x: torch.Tensor,
-            additional_info: Optional[Dict[str, Any]] = None
+            additional_info: Optional[Dict[str, Any]] = None,
+            stage: str = 'valid'
     ) -> Dict[str, Any]:
         if additional_info is not None:
             # batch_size == 1 or same augmented organ
@@ -119,7 +122,7 @@ class EnsembleHolder(TTAHolder):
         for idx, st in enumerate(self.state_dicts):
             self.segmentor.load_state_dict(st, strict=False)
             # [T, 3, H, W]
-            preds_tmp = super(EnsembleHolder, self)._forward_impl(input_x, additional_info=additional_info)
+            preds_tmp = super(EnsembleHolder, self)._forward_impl(input_x, additional_info=additional_info, stage='valid')
             tensor = preds_tmp['probs'] * w[idx] # [TTA_CNT; CHANNELS; H; W]
             if probs is None:
                 probs = tensor
@@ -149,18 +152,21 @@ class EnsembleDifferent(EnsembleHolder):
     def _forward_impl(
             self,
             input_x: torch.Tensor,
-            additional_info: Optional[Dict[str, Any]] = None
+            additional_info: Optional[Dict[str, Any]] = None,
+            stage: str = 'valid'
     ) -> Dict[str, Any]:
         preds = super(EnsembleDifferent, self)._forward_impl(
             input_x,
-            copy(additional_info)
+            copy(additional_info),
+            stage='valid'
         )
         #print(preds['probs'].shape, flush=True)
         for holder_name in self.holder_names:
             holder: ModelHolder = getattr(self, holder_name)
             preds_tmp = holder._forward_impl(
                 input_x,
-                copy(additional_info)
+                copy(additional_info),
+                stage='valid'
             )
             #print('hah', preds_tmp['probs'].shape, flush=True)
             preds['probs'] += preds_tmp['probs']

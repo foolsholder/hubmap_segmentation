@@ -50,45 +50,44 @@ def get_simple_augmentations(
             [
                 #RandomCrop(height, width, p=1.0),
                 #Morphology
-                FRandomResizedCrop(
-                    height=height,
-                    width=width,
-                    interpolation=cv2.INTER_LANCZOS4,
-                    scale=(0.20, 0.30),  # mean - 0.25
-                    always_apply=True
-                ),
-                #RandomCrop(
+                #FRandomResizedCrop(
                 #    height=height,
                 #    width=width,
+                #    interpolation=cv2.INTER_LANCZOS4,
+                #    scale=(0.20, 0.30),  # mean - 0.25
                 #    always_apply=True
-                #), # 1024x1024 -> 512x512
+                #),
+                RandomCrop(
+                    height=height,
+                    width=width,
+                    always_apply=True
+                ), # 1024x1024 -> 512x512
                 RandomRotate90(p=0.5),
                 VerticalFlip(p=0.5),
                 HorizontalFlip(p=0.5),
                 Transpose(p=0.5),
 
-                #ScikitPink(p=0.5),
+                ScikitPink(p=0.5),
+                ChannelShuffle(p=0.5),
 
+                CLAHE(p=0.75),
+                RGBShift(p=0.75),
                 ImageCompression(quality_lower=85, quality_upper=95, p=0.5),
                 # NEW
-                # ChannelShuffle(p=0.75),
-                RGBShift(p=0.75),
-                CLAHE(p=0.75),
                 OneOf([
-                    RandomGamma(p=0.5),
+                    RandomGamma(p=0.15),
                     RandomBrightnessContrast(brightness_limit=0.3, contrast_limit=0.4,
-                                             brightness_by_max=True, p=0.5),
-
-                    HueSaturationValue(hue_shift_limit=60, sat_shift_limit=50,
-                                       val_shift_limit=50, p=0.75)
+                                             brightness_by_max=True, p=0.15),
                     ],
-                    p=0.75
+                    p=0.5
                 ),
+                HueSaturationValue(hue_shift_limit=60, sat_shift_limit=50,
+                                   val_shift_limit=50, p=0.8),
                 OneOf(
                     [
-                        FOpticalDistortion(interpolation=cv2.INTER_LANCZOS4, border_mode=0),
-                        FElasticTransform(interpolation=cv2.INTER_LANCZOS4, border_mode=0),
-                        FGridDistortion(interpolation=cv2.INTER_LANCZOS4, border_mode=0)
+                        #OpticalDistortion(interpolation=cv2.INTER_LANCZOS4, border_mode=0, p=0.3),
+                        ElasticTransform(alpha_affine=15, sigma=7, interpolation=cv2.INTER_LANCZOS4, border_mode=0, p=0.6),
+                        #GridDistortion(distort_limit=0.1, interpolation=cv2.INTER_LANCZOS4, border_mode=0, p=0.3)
                     ],
                     p=0.5
                 ),
@@ -96,17 +95,18 @@ def get_simple_augmentations(
 
                 OneOf(
                     [
-                        GaussianBlur(blur_limit=(3, 7), p=0.5),
-                        GaussNoise(var_limit=10, p=0.5, per_channel=True),
+                        GaussianBlur(blur_limit=(5, 13), p=0.5),
+                        GaussNoise(var_limit=20, p=0.5, per_channel=True),
                     ],
                     p=0.5,
                 ),
-                FShiftScaleRotate(
+                ShiftScaleRotate(
                     rotate_limit=45,
                     shift_limit=0.15,
                     scale_limit=0.2,
                     interpolation=cv2.INTER_LANCZOS4,
-                    border_mode=0
+                    border_mode=0,
+                    p=0.7
                 ),
 
                 Normalize(),

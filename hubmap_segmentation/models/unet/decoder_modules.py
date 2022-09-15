@@ -24,7 +24,7 @@ class ChannelAttentionModule(nn.Module):
         self.global_avgpool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Sequential(
             conv1x1(in_channel, in_channel//reduction),
-            nn.GELU(),
+            nn.ELU(inplace=True),
             conv1x1(in_channel//reduction, in_channel)
         )
 
@@ -90,7 +90,7 @@ class DecodeBlock(nn.Module):
             self.cls_emb_dense = nn.Sequential(
                 nn.Linear(cls_emb_dim, out_channel, bias=False),
                 nn.BatchNorm1d(out_channel),
-                nn.GELU()
+                nn.ELU(inplace=True)
             )
 
     def forward(self, inputs, cls_emb: Optional[torch.Tensor] = None):
@@ -99,7 +99,7 @@ class DecodeBlock(nn.Module):
 
         x = skip_connection
 
-        x = F.gelu(self.bn1(self.conv3x3_1(x)))
+        x = F.elu(self.bn1(self.conv3x3_1(x)), inplace=True)
 
         x = self.bn2(self.conv3x3_2(x))
 
@@ -107,8 +107,8 @@ class DecodeBlock(nn.Module):
             x = x + self.cls_emb_dense(cls_emb)[:, :, None, None]
 
         x = self.cbam(x)
-        x = F.gelu(x)
-        x = x + F.gelu(self.bn_skip(self.conv1x1_skip(skip_connection))) #shortcut
+        x = F.elu(x, inplace=True)
+        x = x + F.elu(self.bn_skip(self.conv1x1_skip(skip_connection)), inplace=True) #shortcut
 
         return x
 
@@ -122,7 +122,7 @@ class CenterBlock(nn.Module):
     def forward(self, inputs):
         x = self.conv(inputs)
         x = self.bn(x)
-        x = F.gelu(x)
+        x = F.elu(x, inplace=True)
         return x
 
 

@@ -17,7 +17,7 @@ from hubmap_segmentation.losses import (
     BCELoss, SigmoidSoftDiceLoss, NLSDLoss,
     LossAggregation, CATCELoss, CatSoftDiceLoss,
     BinaryFocalLoss, TverskyLoss, CatFocalLoss,
-    LovaszHingeLoss, SymmetricUnifiedFocalLoss
+    LovaszHingeLoss, SymmetricUnifiedFocalLoss, DistillLoss
 )
 from hubmap_segmentation.holders.optimizer_utils import create_opt_shed
 from hubmap_segmentation.models.utils import create_model
@@ -32,7 +32,8 @@ available_losses = {
     'cat_soft_dice': CatSoftDiceLoss,
     'cat_focal_loss': CatFocalLoss,
     'catce': CATCELoss,
-    'negative_log_cat_soft_dice': NLSDLoss
+    'negative_log_cat_soft_dice': NLSDLoss,
+    'distill_logits_mse': DistillLoss
 }
 
 
@@ -116,17 +117,20 @@ class ModelHolder(pl.LightningModule):
         preds: Dict[str, torch.Tensor] = self.forward(input_x, additional_info=batch_dict, stage=stage)
 
         if stage != 'valid':
-            for loss_name in self.losses_names:
-                loss = self.__getattr__(loss_name)
-                dct = loss.calc_loss_and_update_state(
-                    preds,
-                    batch_dict,
-                    stage=stage
-                )
-                for k, v in dct.items():
-                    self.log('{}_batch/{}'.format(k, stage), v, prog_bar=True, sync_dist=True)
-                preds.update(dct)
+            self._log_losses(batch_dict, preds, stage)
         return preds
+
+    def _log_losses(self, batch_dict, preds, stage):
+        for loss_name in self.losses_names:
+            loss = self.__getattr__(loss_name)
+            dct = loss.calc_loss_and_update_state(
+                preds,
+                batch_dict,
+                stage=stage
+            )
+            for k, v in dct.items():
+                self.log('{}_batch/{}'.format(k, stage), v, prog_bar=True, sync_dist=True)
+            preds.update(dct)
 
     def validation_step(
             self,
@@ -165,17 +169,21 @@ class ModelHolder(pl.LightningModule):
     def _forward_impl(
             self,
             input_x: torch.Tensor,
-            additional_info: Optional[Dict[str, Any]] = None
+            additional_info: Optional[Dict[str, Any]] = None,
+            stage: str = 'valid'
     ) -> Dict[str, Any]:
         preds = self.segmentor(input_x, additional_info)
+        if 'aux_probs' in preds and stage == 'valid':
+            preds['probs'] = (preds['probs'] + 0.4 * preds['aux_probs']) / 1.4
         return preds
 
     def _forward(
             self,
             input_x: torch.Tensor,
             additional_info: Optional[Dict[str, Any]] = None,
+            stage: str = 'valid'
     ) -> Dict[str, Any]:
-        return self._forward_impl(input_x, additional_info)
+        return self._forward_impl(input_x, additional_info, stage=stage)
 
     def forward(
             self,
@@ -184,7 +192,7 @@ class ModelHolder(pl.LightningModule):
             stage: str = 'valid'
     ) -> Dict[str, Any]:
         if stage != 'valid' or not self.use_tiling_inf:
-            preds: Dict[str, torch.Tensor] = self._forward(input_x, additional_info)
+            preds: Dict[str, torch.Tensor] = self._forward(input_x, additional_info, stage=stage)
         else:
             preds: Dict[str, torch.Tensor] = self.sliding_window(input_x, additional_info)
         return preds
@@ -193,7 +201,7 @@ class ModelHolder(pl.LightningModule):
         params = [
             {
                 'params': self.segmentor.backbone.parameters(),
-                'lr': self._config['opt_sched']['opt']['lr'] * 0.1
+                'lr': self._config['opt_sched']['opt']['lr']
             },
             {
                 'params': self.segmentor.decoder.parameters(),
@@ -244,7 +252,7 @@ class ModelHolder(pl.LightningModule):
                 weight[:, h_left:h_right, w_left:w_right] += 1
                 input_window = input_x[:, :, h_left:h_right, w_left:w_right]
 
-                preds = self._forward(input_window, additional_info)
+                preds = self._forward(input_window, additional_info, stage='valid')
                 # [1, C, T_H, T_W]
                 window_probs = preds['probs'][0] # [C; T_H; T_W]
 

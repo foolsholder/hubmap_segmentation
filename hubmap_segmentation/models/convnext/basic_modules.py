@@ -13,6 +13,7 @@ from torchvision.models.convnext import (
     Permute
 )
 
+
 class VSPermute(Permute):
     def forward(self, x: Tensor) -> Tensor:
         return super(VSPermute, self).forward(x).contiguous()
