@@ -74,6 +74,8 @@ def _clear_segmentor_prefix(state_dict: Dict[str, Any]) -> Dict[str, Any]:
         str_patt = 'segmentor.'
         for k, v in state_dict.items():
             if str_patt in k:
+                if 'encoder' in k:
+                    k = k.replace('encoder', 'backbone')
                 new_k = k[len(str_patt):]
                 res[new_k] = v
         return res

@@ -19,25 +19,25 @@ avaliable_backbones = {
 
 backboned_unet_args = {
     'swin': {
-        'encoder_out' : [96, 192, 384, 768],
-        'decoder_out' : [256, 256, 256, 256],
-        'upsamples' : [True, True, True, True][::-1],
-        'center_channels' : 256,
-        'last_channels' : 64
+        'encoder_out': [96, 192, 384, 768],
+        'decoder_out': [256, 256, 256, 256],
+        'upsamples': [True, True, True, True][::-1],
+        'center_channels': 256,
+        'last_channels': 64
     },
     'convnext': {
-        'encoder_out' : [96, 192, 384, 768],
-        'decoder_out' : [256, 256, 256, 256],
-        'upsamples' : [True, True, True, True][::-1],
-        'center_channels' : 256,
-        'last_channels' : 64
+        'encoder_out': [96, 192, 384, 768],
+        'decoder_out': [256, 256, 128, 128],
+        'upsamples': [True, True, True, True][::-1],
+        'center_channels': 256,
+        'last_channels': 64
     },
     'effnet': {
-        'encoder_out' : [24, 48, 80, 160, 176, 304, 512],
-        'decoder_out' : [256, 256, 256, 128, 128, 128, 128],
-        'upsamples' : [False, True, True, True, False, True, False][::-1],
-        'center_channels' : 256,
-        'last_channels' : 64
+        'encoder_out': [24, 48, 80, 160, 176, 304, 512],
+        'decoder_out': [512, 320, 176, 160, 120, 90, 64],
+        'upsamples': [False, True, True, True, False, True, False][::-1],
+        'center_channels': 256,
+        'last_channels': 64
     }
 }
 
@@ -91,7 +91,7 @@ class UNetSegmentor(nn.Module):
                 #bias=False
             ),
             nn.BatchNorm2d(last_channels),
-            nn.ELU(inplace=True),
+            nn.ReLU(inplace=True),
             nn.Conv2d(last_channels, num_classes, kernel_size=1)
         )
         # 6 64 1 1
@@ -106,7 +106,7 @@ class UNetSegmentor(nn.Module):
                     bias=False
                 ),
                 nn.BatchNorm2d(last_channels),
-                nn.ELU(inplace=True),
+                nn.ReLU(inplace=True),
                 nn.Conv2d(last_channels, num_classes, kernel_size=1)
             )
 
@@ -115,10 +115,10 @@ class UNetSegmentor(nn.Module):
             self.emb_layer = nn.Sequential(
                 nn.Linear(cls_emb_dim, cls_emb_dim * 2, bias=False),
                 nn.BatchNorm1d(cls_emb_dim * 2),
-                nn.ELU(inplace=True),
+                nn.ReLU(inplace=True),
                 nn.Linear(cls_emb_dim * 2, cls_emb_dim, bias=False),
                 nn.BatchNorm1d(cls_emb_dim),
-                nn.ELU(inplace=True)
+                nn.ReLU(inplace=True)
             )
 
     def forward(
