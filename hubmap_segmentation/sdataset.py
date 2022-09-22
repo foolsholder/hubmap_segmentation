@@ -78,13 +78,13 @@ class SDataset(Dataset):
                 self.root,
                 self.folder_images,
                 image_id + '.npy'
-            ))  # .astype(np.float32)
+            ), allow_pickle=True, fix_imports=True)  # .astype(np.float32)
             # image = (image / np.max(image) * 255).astype(np.uint8)
             target = (np.load(os.path.join(
                 self.root,
                 self.folder_masks,
-                image_id + '.npy'
-            )) > 0).astype(np.float32)
+                image_id + '.npy',
+            ), allow_pickle=True, fix_imports=True) > 0).astype(np.float32)
             self.images += [image]
             self.targets += [target]
 
@@ -129,7 +129,7 @@ class SDataset(Dataset):
                 self.root,
                 'full_masks',
                 image_id + '.npy'
-            ))
+            ), allow_pickle=True, fix_imports=True)
             full_mask = torch.Tensor(full_mask)[None]
             res.update({
                 'full_target': full_mask,

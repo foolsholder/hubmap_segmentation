@@ -118,4 +118,4 @@ def create_images():
 
 if __name__ == '__main__':
     create_masks()
-    create_images()
+    #create_images()

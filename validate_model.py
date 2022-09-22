@@ -9,11 +9,10 @@ config = {
     'model_cfg': {
         "type": "unet",
         "backbone_cfg": {
-          "type": "effnet",
+          "type": "convnext",
           "load_weights": ""
         },
         "use_aux_head": True,
-        "truncate": 1,
         "num_classes": 6
     }
 }
@@ -28,6 +27,7 @@ if False:
 else:
     weights = None
 
+os.environ['SDATASET_PATH'] = '../data/'
 if False:
     effnet_holder = EnsembleHolder(
         config={
@@ -56,9 +56,9 @@ model_holder = EnsembleDifferent(
     config=config,
     ckpt_path_list=[
         os.path.join(
-            os.environ['SHUBMAP_EXPS'],
-            'catce+catsdice_effnetT1_adamw_LR-1e-4_512_1024_A3_F0_RRC',
-            'avg_top10.ckpt'
+            '../ckpts',
+            'averaged-conv',
+            '0'
         )
     ],
     tiling_height=1024,
@@ -67,18 +67,15 @@ model_holder = EnsembleDifferent(
     weights=weights,
     tta_list=[
         ('flip', [-2]),
-        ('flip', [-1]),
-        ('flip', [-1, -2]),
-        ('transpose', None),
         ('rotate90', 1),
-        ('rotate90', 2),
-        ('rotate90', 3),
-    ],
+   ],
     yet_another_holders=aux_holders
 )
 
 trainer = pl.Trainer(
     accelerator='gpu',
+    strategy='ddp',
+    devices=3,
     log_every_n_steps=1,
 )
 

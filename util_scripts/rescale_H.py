@@ -15,7 +15,7 @@ def create_masks():
     else:
         root = argv[1]
 
-    H = 1024 * 3 // 2
+    H = 1024
 
     koef = H / 3000.
 
@@ -61,7 +61,7 @@ def create_images():
     else:
         root = argv[1]
 
-    H = 1024 * 3 // 2
+    H = 1024
 
     koef = H / 3000.
 
